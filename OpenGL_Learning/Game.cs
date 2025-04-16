@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenGL_Learning.Engine;
+using OpenGL_Learning.Engine.meshObjects;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -15,49 +18,30 @@ namespace OpenGL_Learning
 {
     internal class Game: GameWindow
     {
-        int width = 1280, height = 720;
+        // Screen width / height
+        private int width = 1920, height = 1080;
 
-        //float[] triangle_vertices =
-        //{
-        //    0f,     0.5f,   0f,
-        //    -0.5f,  -0.5f,  0f,
-        //    0.5f,   -0.5f,  0f
-        //};
+        // Folder paths
+        private string shaderFolder = "../../../Shaders/";
+        private string textureFolder = "../../../Textures/";
 
-        float[] square_vertices =
-        {
-            -0.5f,  0.5f,   0f, // top left vertex - 0 
-             0.5f,  0.5f,   0f, // top right vertex - 1 
-             0.5f, -0.5f,   0f, // bottom right vertex - 2
-            -0.5f, -0.5f,   0f
-        };
+        // Lists of existing elements
 
-        uint[] indices =
-        {
-            0, 1, 2,
-            2, 3, 0
-        };
+        // List of existing shaders
+        private List<Shader> shaders = new List<Shader>();
+        // List of exisitng textures
+        private List<Texture> textures = new List<Texture>();
+        // List of existing objects
+        private List<MeshObject> objects = new List<MeshObject>();
 
-        float[] texCoords =
-        {
-            0f, 1f,
-            1f, 1f,
-            1f, 0f,
-            0f, 0f
-        };
-        int textureVBO;
+        // Current time in the game world
+        float time = 0;
 
-        int VAO;
-        int VBO;
-        int EBO;
+        // Main camera
+        Camera camera;
 
-        //int texture;
-
-        string shaderFolder = "../../../Shaders/";
-        string textureFolder = "../../../Textures/";
-
-        Texture texture;
-        Shader shader;
+        // Whether the cursor is grabbed at the moment (if false - the cursor is shown)
+        bool cursorGrabbed = true;
 
 
         public Game(int width, int height) : base
@@ -72,67 +56,52 @@ namespace OpenGL_Learning
         {
             base.OnLoad();
 
-            VAO = GL.GenVertexArray();
-            VBO = GL.GenBuffer();
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, square_vertices.Length * sizeof(float), square_vertices, BufferUsageHint.StaticDraw);
-
-            GL.BindVertexArray(VAO);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexArrayAttrib(VAO, 0);
-
-            // EBO
-            EBO = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, EBO);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-
             // Shaders
-            shader = new Shader(shaderFolder + "shader.vert", shaderFolder + "shader.frag");
-            shader.UseShader();
-
-            // texture VBO
-            textureVBO = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, textureVBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, texCoords.Length * sizeof(float), texCoords, BufferUsageHint.StaticDraw);
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 0, 0);
-            GL.EnableVertexArrayAttrib(VAO, 1);
-
+            shaders.Add(new Shader(shaderFolder + "shader.vert", shaderFolder + "shader.frag"));
+            shaders.Add(new Shader(shaderFolder + "shaderWater.vert", shaderFolder + "shaderWater.frag"));
 
             // Textures
-            texture = new Texture(textureFolder + "Artem_ChibiArt.png");
-            texture.UseTexture(TextureUnit.Texture0);
-            
+            textures.Add(new Texture(textureFolder + "wood.jpg"));
+            textures.Add(new Texture(textureFolder + "a.png"));
+            textures.Add(new Texture(textureFolder + "sea-water-512x512.png"));
+
+            // Objects
+            objects.Add(new CubeObject(this, shaders[0], new Texture[] { textures[0] }));
+            objects.Add(new PlaneObject(this, shaders[0], new Texture[] { textures[1] }));
+            objects.Add(new GridObject(100, 100, 1, this, shaders[1], new Texture[] { textures[2] }));
+
+            objects[1].AddWorldOffset(new Vector3(-1f, 3f, -3f));
+            objects[2].AddWorldOffset(new Vector3(0f, -3f, -5f));
+
+            objects[0].SetWorldLocation(new Vector3(1f, 3f, -10f));
+            objects[0].SetScale(new Vector3(5f, 5f, 5f));
+
+
+            GL.Enable(EnableCap.DepthTest);
+
+            camera = new Camera(width, height, Vector3.Zero);
+            CursorState = CursorState.Grabbed;
         }
 
         protected override void OnUnload()
-        {
-            GL.DeleteBuffer(VAO);
-            GL.DeleteBuffer(VBO);
-            GL.DeleteBuffer(EBO);
-
-            texture.DeleteTexture();
-            shader.DeleteShader();
+        {     
+            foreach(var item in objects) item.Unload();
+            foreach(var item in shaders) item.DeleteShader();
+            foreach(var item in textures) item.DeleteTexture();
             
             base.OnUnload();
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
+            time += (float)args.Time;
+
             GL.ClearColor(0.3f, 0.3f, 1f, 1f);
-            GL.Clear(ClearBufferMask.ColorBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            GL.BindVertexArray(VAO);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, EBO);
 
-            texture.UseTexture(TextureUnit.Texture0);
-
-            shader.UseShader();
-            GL.Uniform1(GL.GetUniformLocation(shader.GetHandle(), "texture0"), 0);
-
-            GL.DrawElements(PrimitiveType.Triangles, indices.Length, DrawElementsType.UnsignedInt, 0);
+           foreach(var obj in objects)
+                obj.Render(camera, time);
 
 
             Context.SwapBuffers();
@@ -144,31 +113,21 @@ namespace OpenGL_Learning
         {
             base.OnUpdateFrame(args);
 
+            camera.Update(KeyboardState, MouseState, args);
+
             if (KeyboardState.IsKeyDown(Keys.Escape)) 
             {
                 Close();
             }
-        }
 
-
-        public static string LoadShaderSource(string filepath)
-        {
-            string shaderSource = "";
-
-            try
+            if (KeyboardState.IsKeyReleased(Keys.F1) && KeyboardState.IsKeyDown(Keys.LeftShift))
             {
-                using (StreamReader reader = new StreamReader(filepath))
-                {
-                    shaderSource = reader.ReadToEnd();
-                }
-            }
+                if (cursorGrabbed) CursorState = CursorState.Normal;
+                else CursorState = CursorState.Grabbed;
 
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed to load shader source file:" + e.Message); 
+                cursorGrabbed = !cursorGrabbed;
+                camera.SetMouseInputEnabled(cursorGrabbed);
             }
-
-            return shaderSource;
         }
 
 
@@ -176,10 +135,12 @@ namespace OpenGL_Learning
         {
             base.OnResize(e);
 
-            GL.Viewport(0, 0, width, height);
-
             this.width = e.Width;
             this.height = e.Height;
+
+            if (camera != null) camera.UpdateWindowSize(width, height);
+
+            GL.Viewport(0, 0, width, height);
         }
 
     }
