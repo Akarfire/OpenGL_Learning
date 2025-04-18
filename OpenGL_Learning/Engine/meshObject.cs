@@ -13,7 +13,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace OpenGL_Learning.Engine
 {
-    internal struct Vertex
+    public struct Vertex
     {
         public Vector3 position;
         public Vector3 normal;
@@ -128,7 +128,7 @@ namespace OpenGL_Learning.Engine
             }
         }
 
-        public void Render(Camera camera, float time)
+        public void Render(Camera camera)
         {
             // Receiving matricies from the camera
             Matrix4 view = camera.GetViewMatrix();
@@ -140,11 +140,6 @@ namespace OpenGL_Learning.Engine
             // Binding shader and passing matricies to it
             shader.UseShader();
             shader.bindMatrices(scaleMatrix * rotationMatrix * locationMatrix, view, projection);
-
-            int timeLocation = GL.GetUniformLocation(shader.GetHandle(), "time");
-
-            if (timeLocation != -1)
-                GL.Uniform1(timeLocation, time);
 
             // Binding vertex array and elements
             GL.BindVertexArray(VAO);

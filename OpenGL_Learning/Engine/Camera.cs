@@ -11,7 +11,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace OpenGL_Learning.Engine
 {
-    internal class Camera
+    public class Camera: GameWorldObject
     {
 
         private float speed = 6f;
@@ -20,30 +20,27 @@ namespace OpenGL_Learning.Engine
         private float fov = 60f;
         private float sensitivity = 60f;
 
-        public Vector3 position;
-
         Vector3 up = Vector3.UnitY;
         Vector3 forward = -Vector3.UnitZ;
         Vector3 right = Vector3.UnitX;
-
-        private float pitch;
-        private float yaw = -90f;
 
         private bool firstMove = true;
         public Vector2 lastMousePosition;
 
         bool enableMouseInput = true;
 
-        public Camera(int width, int height, Vector3 inPosition)
+
+        // -----
+
+        public Camera(Engine inEngine): base(inEngine)
         {
-            screenHeight = height;
-            screenWidth = width;
-            position = inPosition;
+            screenHeight = engine.windowHeight;
+            screenWidth = engine.windowHeight;
         }
 
         public Matrix4 GetViewMatrix()
         {
-            return Matrix4.LookAt(position, position + forward, up);
+            return Matrix4.LookAt(location, location + forward, up);
         }
         public Matrix4 GetProjectionMatrix()
         {
@@ -54,12 +51,12 @@ namespace OpenGL_Learning.Engine
         {
             float deltaTime = (float)eventArgs.Time;
 
-            if (keyboardInput.IsKeyDown(Keys.W)) { position += forward * speed * deltaTime; }
-            if (keyboardInput.IsKeyDown(Keys.S)) { position -= forward * speed * deltaTime; }
-            if (keyboardInput.IsKeyDown(Keys.A)) { position -= right * speed * deltaTime; }
-            if (keyboardInput.IsKeyDown(Keys.D)) { position += right * speed * deltaTime; }
-            if (keyboardInput.IsKeyDown(Keys.Q)) { position -= up * speed * deltaTime; }
-            if (keyboardInput.IsKeyDown(Keys.E)) { position += up * speed * deltaTime; }
+            if (keyboardInput.IsKeyDown(Keys.W)) { AddLocation(forwardVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.S)) { AddLocation(forwardVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.A)) { AddLocation(rightVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.D)) { AddLocation(rightVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.Q)) { AddLocation(upVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.E)) { AddLocation(upVector * speed * deltaTime); }
 
             if (firstMove)
             {
@@ -75,10 +72,7 @@ namespace OpenGL_Learning.Engine
                 lastMousePosition.X = mouseInput.X;
                 lastMousePosition.Y = mouseInput.Y;
 
-                yaw += deltaX * sensitivity * deltaTime;
-                pitch -= deltaY * sensitivity * deltaTime;
-
-                UpdateVectors();
+                AddRotation(new Vector3(0, deltaY * sensitivity * deltaTime, deltaX * sensitivity * deltaTime));
             }
         }
 
@@ -87,19 +81,6 @@ namespace OpenGL_Learning.Engine
             InputController(keyboardInput, mouseInput, eventArgs);
         }
 
-
-        private void UpdateVectors()
-        {
-            forward.X = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Cos(MathHelper.DegreesToRadians(yaw));
-            forward.Y = MathF.Sin(MathHelper.DegreesToRadians(pitch));
-            forward.Z = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Sin(MathHelper.DegreesToRadians(yaw));
-
-            forward = Vector3.Normalize(forward);
-
-            right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitY));
-
-            up = Vector3.Normalize(Vector3.Cross(right, forward));
-        }
 
         public void SetMouseInputEnabled(bool enabled)
         {

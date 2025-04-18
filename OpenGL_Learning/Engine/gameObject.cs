@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace OpenGL_Learning.Engine
 {
-    internal class GameObject
+    public class GameObject
     {
         public Engine engine { get; private set; }
         public GameObject(Engine inEngine) { engine = inEngine; }

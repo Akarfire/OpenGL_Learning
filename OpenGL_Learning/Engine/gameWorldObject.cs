@@ -7,7 +7,7 @@ using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine
 {
-    internal class GameWorldObject: GameObject
+    public class GameWorldObject: GameObject
     {
         // Location of the object on the previous frame
         private Vector3 previousFrameLocation;
@@ -20,6 +20,13 @@ namespace OpenGL_Learning.Engine
         public Vector3 scale { get; protected set; }
         // Object's velocity in world space
         public Vector3 velocity { get; protected set; }
+
+
+        // Directional vectors
+
+        public Vector3 forwardVector { get; protected set; }
+        public Vector3 upVector { get; protected set; }
+        public Vector3 rightVector { get; protected set; }
 
 
         public GameWorldObject(Engine inEngine) : base(inEngine) { }
@@ -64,6 +71,12 @@ namespace OpenGL_Learning.Engine
 
 
         // Called whenether object's location, rotation or scale have been changed
-        protected virtual void OnTransformationUpdated() { }
+        protected virtual void OnTransformationUpdated() 
+        {
+            // Recalculating directional vectors
+            forwardVector = rotation * Vector3.UnitX;
+            rightVector = Vector3.Normalize(Vector3.Cross(forwardVector, Vector3.UnitY));
+            upVector = Vector3.Normalize(Vector3.Cross(rightVector, forwardVector));
+        }
     }
 }
