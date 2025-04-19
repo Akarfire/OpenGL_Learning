@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.ES11;
+﻿using OpenGL_Learning.Engine.objects;
+using OpenTK.Graphics.ES11;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -10,16 +11,19 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace OpenGL_Learning.Engine
+namespace OpenGL_Learning.Engine.objects.player
 {
-    public class Camera: GameWorldObject, InputInterface
+    public class Camera : GameWorldObject, InputInterface
     {
 
-        private float speed = 6f;
+        public float speed = 6f;
+        public float fov = 60f;
+        public float sensitivity = 30f;
+        public float minViewDistance = 0.1f;
+        public float maxViewDistance = 200f;
+
         private int screenWidth;
         private int screenHeight;
-        private float fov = 60f;
-        private float sensitivity = 30f;
 
         private bool firstMove = true;
         public Vector2 lastMousePosition;
@@ -29,7 +33,7 @@ namespace OpenGL_Learning.Engine
 
         // -----
 
-        public Camera(Engine inEngine): base(inEngine)
+        public Camera(Engine inEngine) : base(inEngine)
         {
             screenHeight = engine.windowHeight;
             screenWidth = engine.windowHeight;
@@ -41,7 +45,7 @@ namespace OpenGL_Learning.Engine
         }
         public Matrix4 GetProjectionMatrix()
         {
-            return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), (float)screenWidth / screenHeight, 0.1f, 100f);
+            return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), (float)screenWidth / screenHeight, minViewDistance, maxViewDistance);
         }
 
         public void InputController(float deltaTime, KeyboardState keyboardInput, MouseState mouseInput)
@@ -69,13 +73,13 @@ namespace OpenGL_Learning.Engine
                 lastMousePosition.Y = mouseInput.Y;
 
 
-                AddRotation(new Vector3(0,  deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
+                AddRotation(new Vector3(0, deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
                 //SetRotation(Quaternion.FromAxisAngle(rightVector, );
                 //AddRotation(Quaternion.FromAxisAngle(upVector, deltaX * sensitivity * deltaTime));
             }
         }
 
-        public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState) 
+        public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState)
         {
             InputController(deltaTime, keyboardState, mouseState);
         }

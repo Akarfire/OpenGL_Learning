@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenGL_Learning.Engine;
+using OpenGL_Learning.Engine.objects;
 using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.meshObjects
+namespace OpenGL_Learning.Engine.objects.meshObjects
 {
     internal class GridObject : MeshObject
     {
         protected int sizeX, sizeZ;
         protected float cellSize;
-        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
+        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
         {
             sizeX = inSizeX;
             sizeZ = inSizeZ;

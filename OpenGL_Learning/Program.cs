@@ -1,5 +1,5 @@
 ﻿
-using ProgramNameSpace;
+using GameCode;
 
 class Program
 { 

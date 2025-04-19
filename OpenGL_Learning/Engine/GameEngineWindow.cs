@@ -4,7 +4,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenGL_Learning.Engine.meshObjects;
+using OpenGL_Learning.Engine.objects.meshObjects;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;

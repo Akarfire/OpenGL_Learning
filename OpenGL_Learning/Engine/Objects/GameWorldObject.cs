@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace OpenGL_Learning.Engine
+namespace OpenGL_Learning.Engine.objects
 {
-    public class GameWorldObject: GameObject
+    public class GameWorldObject : GameObject
     {
         // Location of the object on the previous frame
         private Vector3 previousFrameLocation;
 
         // Object's location in world space
-        public Vector3 location { get; protected set; } = new Vector3 (0, 0, 0);
+        public Vector3 location { get; protected set; } = new Vector3(0, 0, 0);
         // Object's rotation in world space
         public Vector3 rotation { get; protected set; } = new Vector3(0, 0, 0);
         // Object's scale in world space
@@ -32,14 +32,14 @@ namespace OpenGL_Learning.Engine
 
         public GameWorldObject(Engine inEngine) : base(inEngine) { OnTransformationUpdated(); }
 
-        public override void onSpawned()
+        public override void OnSpawned()
         {
-            base.onSpawned();
+            base.OnSpawned();
             previousFrameLocation = location;
         }
-        public override void onUpdated(float deltaTime)
+        public override void OnUpdated(float deltaTime)
         {
-            base.onUpdated(deltaTime);
+            base.OnUpdated(deltaTime);
 
             // Calculating velocity
             velocity = location - previousFrameLocation;
@@ -48,20 +48,34 @@ namespace OpenGL_Learning.Engine
 
 
         // Sets a new location for this object in world space
-        public void SetLocation(Vector3 location) { this.location = location; OnTransformationUpdated(); }
+        public void SetLocation(Vector3 location, bool teleport = true)
+        {
+            this.location = location;
+
+            if (teleport) { previousFrameLocation = this.location; }
+
+            OnTransformationUpdated();
+        }
 
         // Adds world-space offset to the object's location
-        public void AddLocation(Vector3 location) { this.location += location; OnTransformationUpdated(); }
+        public void AddLocation(Vector3 location, bool teleport = false)
+        {
+            this.location += location;
+
+            if (teleport) { previousFrameLocation = this.location; }
+
+            OnTransformationUpdated();
+        }
 
 
         // Sets a new rotation for this object in world space in form a quaternion
         public void SetRotation(Vector3 rotation) { this.rotation = rotation; OnTransformationUpdated(); }
 
         // Adds angular offset to the object in world space
-        public void AddRotation(Vector3 additiveRotation) 
+        public void AddRotation(Vector3 additiveRotation)
         {
             rotation += additiveRotation;
-            OnTransformationUpdated(); 
+            OnTransformationUpdated();
         }
 
 
@@ -70,7 +84,7 @@ namespace OpenGL_Learning.Engine
 
 
         // Called whenether object's location, rotation or scale have been changed
-        protected virtual void OnTransformationUpdated() 
+        protected virtual void OnTransformationUpdated()
         {
             // Recalculating directional vectors
 

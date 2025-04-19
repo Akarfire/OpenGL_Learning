@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using OpenGL_Learning.Engine.objects.player;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -11,7 +12,7 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 
-namespace OpenGL_Learning.Engine
+namespace OpenGL_Learning.Engine.objects
 {
     public struct Vertex
     {
@@ -24,14 +25,14 @@ namespace OpenGL_Learning.Engine
         public Vertex(Vector3 inPosition, Vector2 inTexCoords) { position = inPosition; texCoords = inTexCoords; }
     }
 
-    internal struct Triangle
+    public struct Triangle
     {
         public uint v1, v2, v3;
 
         public Triangle(uint inV1, uint inV2, uint inV3) { v1 = inV1; v2 = inV2; v3 = inV3; }
     }
 
-    internal abstract class MeshObject: GameWorldObject
+    public abstract class MeshObject : GameWorldObject
     {
         // Mesh data
         protected List<Vertex> vertices = new List<Vertex>();
@@ -59,12 +60,12 @@ namespace OpenGL_Learning.Engine
         protected Matrix4 rotationMatrix { get; set; } = Matrix4.Identity;
         protected Matrix4 scaleMatrix { get; set; } = Matrix4.Identity;
 
-        public MeshObject(Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine) 
+        public MeshObject(Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine)
         {
-            shader = engine.GetShader(shaderHandle);
+            shader = engine.shaders[shaderHandle];
 
             textures = new Texture[textureHandles.Length];
-            for (int i = 0; i < textureHandles.Length; i++) { textures[i] = engine.GetTexture(textureHandles[i]); }
+            for (int i = 0; i < textureHandles.Length; i++) { textures[i] = engine.textures[textureHandles[i]]; }
         }
 
         // Must be called at the end of child constructor
@@ -151,9 +152,9 @@ namespace OpenGL_Learning.Engine
             GL.DrawElements(PrimitiveType.Triangles, genIndices.Length * sizeof(uint), DrawElementsType.UnsignedInt, 0);
         }
 
-        public override void onDestroyed()
+        public override void OnDestroyed()
         {
-            base.onDestroyed();
+            base.OnDestroyed();
 
             // Deleting buffers
             GL.DeleteBuffer(VAO);
@@ -164,7 +165,7 @@ namespace OpenGL_Learning.Engine
         protected override void OnTransformationUpdated()
         {
             base.OnTransformationUpdated();
-            
+
             // Updating transformation matricies
             locationMatrix = Matrix4.CreateTranslation(location);
             rotationMatrix = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X)) * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotation.Y)) * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));

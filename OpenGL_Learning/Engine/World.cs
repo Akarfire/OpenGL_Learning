@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenGL_Learning.Engine.objects;
+using OpenGL_Learning.Engine.objects.player;
 
 namespace OpenGL_Learning.Engine
 {
@@ -12,7 +14,7 @@ namespace OpenGL_Learning.Engine
         public Engine engine {  get; private set; }
 
         // Object list
-        public List<GameObject> objects {  get; private set; } = new List<GameObject>();
+        protected List<GameObject> objects { get; set; } = new List<GameObject>();
 
 
         // Main camera of the world
@@ -59,7 +61,7 @@ namespace OpenGL_Learning.Engine
 
             foreach (GameObject obj in objects) 
             {
-                obj.onUpdated(deltaTime);
+                obj.OnUpdated(deltaTime);
 
                 if (obj is InputInterface) ((InputInterface)obj).onUpdateInput(deltaTime, engine.cachedKeyboardState, engine.cachedMouseState);
             }
@@ -75,16 +77,16 @@ namespace OpenGL_Learning.Engine
 
 
         // Object management
-        public int AddObject(GameObject obj) {  objects.Add(obj); return objects.Count - 1; }
-
-        public void RemoveObject(int handle) 
-        {
-            if (objects.Count <= handle) return;
-
-            objects[handle].onDestroyed();
-            objects.RemoveAt(handle);
+        public void AddObject(GameObject obj) 
+        { 
+            objects.Add(obj); 
+            obj.OnSpawned();
         }
 
-        public GameObject GetObject(int handle) { return objects[handle]; }
+        public void RemoveObject(GameObject obj)
+        {
+            obj.OnDestroyed();
+            objects.Remove(obj);
+        }
     }
 }

@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenGL_Learning.Engine;
+using OpenGL_Learning.Engine.objects;
 using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.meshObjects
+namespace OpenGL_Learning.Engine.objects.meshObjects
 {
     internal class CubeObject : MeshObject
     {
-        public CubeObject(Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
+        public CubeObject(Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
         {
 
             vertices = new List<Vertex>()

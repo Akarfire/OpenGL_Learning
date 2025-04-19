@@ -17,9 +17,9 @@ namespace OpenGL_Learning.Engine
         private GameEngineWindow gameWindow = null;
 
         // Entity lists
-        public List<Shader> shaders { get; private set; } = new List<Shader>();
-        public List<Texture> textures { get; private set; } = new List<Texture>();
-        public List<World> worlds { get; private set; } = new List<World>();
+        public Dictionary<string, Shader> shaders { get; private set; } = new Dictionary<string, Shader>();
+        public Dictionary<string, Texture> textures { get; private set; } = new Dictionary<string, Texture>();
+        public Dictionary<string, World> worlds { get; private set; } = new Dictionary<string, World>();
 
 
         // Window settings
@@ -53,9 +53,9 @@ namespace OpenGL_Learning.Engine
         {
             if (gameWindow != null) gameWindow.Close();
 
-            foreach (Shader shader in shaders) { shader.DeleteShader(); }
-            foreach (Texture texture in textures) { texture.DeleteTexture(); }
-            foreach (World world in worlds) { world.OnDestroy(); }
+            foreach (var shader in shaders) { shader.Value.DeleteShader(); }
+            foreach (var texture in textures) { texture.Value.DeleteTexture(); }
+            foreach (var world in worlds) { world.Value.OnDestroy(); }
         }
 
         public void Update(float deltaTime) 
@@ -99,8 +99,9 @@ namespace OpenGL_Learning.Engine
             if (currentWorld == null) return;
 
             // Updating shaders before rendering
-            foreach (Shader shader in shaders)
+            foreach (var shaderPair in shaders)
             {
+                var shader = shaderPair.Value;
                 // Engine-level shader uniforms
 
                 // World time uniform
@@ -149,66 +150,58 @@ namespace OpenGL_Learning.Engine
 
 
         // Registers a new shader in the engine, returns in-engine shader handle (not openGL handle) 
-        public int AddShader(Shader shader) { shaders.Add(shader); return shaders.Count - 1; }
+        public void AddShader(string shaderName, Shader shader) { shaders.Add(shaderName, shader);}
 
         // Removes a shader from the engine's registry by it's in-engine shader handle (not openGL handle) 
-        public void RemoveShader(int handle) 
+        public void RemoveShader(string shaderName) 
         {
-            if (shaders.Count <= handle) return;
+            if (!shaders.ContainsKey(shaderName)) return;
 
-            shaders[handle].DeleteShader();
-            shaders.RemoveAt(handle);
+            shaders[shaderName].DeleteShader();
+            shaders.Remove(shaderName);
         }
-
-        public Shader GetShader(int handle) { return shaders[handle]; }
 
 
         // Registers a new texture in the engine, returns in-engine texture handle (not openGL handle) 
-        public int AddTexture(Texture texture) { textures.Add(texture); return textures.Count - 1; }
+        public void AddTexture(string textureName, Texture texture) { textures.Add(textureName, texture);}
 
         // Removes a texture from the engine's registry by it's in-engine texture handle (not openGL handle) 
-        public void RemoveTexture(int handle)
+        public void RemoveTexture(string textureName)
         {
-            if (textures.Count <= handle) return;
+            if (!textures.ContainsKey(textureName)) return;
 
-            textures[handle].DeleteTexture();
-            textures.RemoveAt(handle);
+            textures[textureName].DeleteTexture();
+            textures.Remove(textureName);
         }
 
-        public Texture GetTexture(int handle) { return textures[handle]; }
-
-
         // Creates a new game world and returns it's handle
-        public int CreateWorld() 
-        { 
-            worlds.Add(new World(this)); 
-            worlds[worlds.Count - 1].OnLoad();
+        public World CreateWorld(string worldName) 
+        {
+            World newWorld = new World(this);
+            worlds.Add(worldName, newWorld);
 
-            if (currentWorld == null) currentWorld = worlds[worlds.Count - 1];
+            newWorld.OnLoad();
 
+            if (currentWorld == null) currentWorld = newWorld;
 
-            return worlds.Count - 1; 
+            return newWorld;
         }
 
         // Destroys a game world with a given handle
-        public void DestroyWorld(int handle) 
+        public void DestroyWorld(string worldName) 
         {
-            if (worlds.Count <= handle) return;
+            if (!worlds.ContainsKey(worldName)) { Console.WriteLine("Error world '" + worldName + "' does not exist!"); return; }
 
-            if (currentWorld == worlds[handle]) currentWorld = null;
+            if (currentWorld == worlds[worldName]) currentWorld = null;
 
-            worlds[handle].OnDestroy();
-            worlds.RemoveAt(handle);
+            worlds[worldName].OnDestroy();
+            worlds.Remove(worldName);
         }
 
-        public World GetWorld(int handle) { return worlds[handle]; }
-
-        public void SetCurrentWolrd(int handle)
+        public void SetCurrentWolrd(string worldName)
         {
-            if (worlds.Count <= handle) return;
-            currentWorld = worlds[handle];
+            if (!worlds.ContainsKey(worldName)) { Console.WriteLine("Error world '" + worldName + "' does not exist!"); return; }
+            currentWorld = worlds[worldName];
         }
-
-        public World GetCurrentWolrd() { return currentWorld; }
     }
 }
