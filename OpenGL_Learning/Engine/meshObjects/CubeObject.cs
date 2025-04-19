@@ -10,7 +10,7 @@ namespace OpenGL_Learning.Engine.meshObjects
 {
     internal class CubeObject : MeshObject
     {
-        public CubeObject(Engine inEngine, Shader inShader, Texture[] inTextures) : base(inEngine)
+        public CubeObject(Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
         {
 
             vertices = new List<Vertex>()
@@ -47,7 +47,7 @@ namespace OpenGL_Learning.Engine.meshObjects
                 new Triangle(6, 7, 3)
             };
 
-            InitMeshObject(inShader, inTextures);
+            InitMeshObject();
         }
     }
 }

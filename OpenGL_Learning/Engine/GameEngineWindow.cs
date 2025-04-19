@@ -31,42 +31,20 @@ namespace OpenGL_Learning.Engine
         protected override void OnLoad()
         {
             base.OnLoad();
-
-            // Shaders
-            
-
-            // Textures
-            textures.Add(new Texture(textureFolder + "wood.jpg"));
-            textures.Add(new Texture(textureFolder + "a.png"));
-            textures.Add(new Texture(textureFolder + "sea-water-512x512.png"));
-
-            
-
-
-            camera = new Camera(width, height, Vector3.Zero);
-            CursorState = CursorState.Grabbed;
         }
 
         protected override void OnUnload()
         {
-            foreach (var item in objects) item.Unload();
-            foreach (var item in shaders) item.DeleteShader();
-            foreach (var item in textures) item.DeleteTexture();
-
+            engine.ShutdownEngine();
             base.OnUnload();
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            time += (float)args.Time;
-
-            GL.ClearColor(0.3f, 0.3f, 1f, 1f);
+            GL.ClearColor(0.0f, 0.0f, 0f, 1f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-
-            foreach (var obj in objects)
-                obj.Render(camera, time);
-
+            engine.Render((float)args.Time);
 
             Context.SwapBuffers();
 
@@ -75,23 +53,10 @@ namespace OpenGL_Learning.Engine
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+            engine.CacheInput(KeyboardState, MouseState);
+            engine.Update((float)args.Time);
+
             base.OnUpdateFrame(args);
-
-            camera.Update(KeyboardState, MouseState, args);
-
-            if (KeyboardState.IsKeyDown(Keys.Escape))
-            {
-                Close();
-            }
-
-            if (KeyboardState.IsKeyReleased(Keys.F1) && KeyboardState.IsKeyDown(Keys.LeftShift))
-            {
-                if (cursorGrabbed) CursorState = CursorState.Normal;
-                else CursorState = CursorState.Grabbed;
-
-                cursorGrabbed = !cursorGrabbed;
-                camera.SetMouseInputEnabled(cursorGrabbed);
-            }
         }
 
 
@@ -99,13 +64,7 @@ namespace OpenGL_Learning.Engine
         {
             base.OnResize(e);
 
-            width = e.Width;
-            height = e.Height;
-
-            if (camera != null) camera.UpdateWindowSize(width, height);
-
-            GL.Viewport(0, 0, width, height);
+            engine.OnWindowResized(e.Width, e.Height);
         }
-
     }
 }

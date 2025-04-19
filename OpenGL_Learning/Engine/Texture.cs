@@ -39,9 +39,6 @@ namespace OpenGL_Learning.Engine
                 return;
             }
 
-            Console.WriteLine("Texture loaded: Width = " + textureImage.Width + ", Height = " + textureImage.Height);
-
-
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, textureImage.Width, textureImage.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, textureImage.Data);
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 

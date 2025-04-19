@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace OpenGL_Learning.Engine
 {
@@ -13,13 +14,13 @@ namespace OpenGL_Learning.Engine
         private Vector3 previousFrameLocation;
 
         // Object's location in world space
-        public Vector3 location { get; protected set; }
+        public Vector3 location { get; protected set; } = new Vector3 (0, 0, 0);
         // Object's rotation in world space
-        public Quaternion rotation { get; protected set; }
+        public Vector3 rotation { get; protected set; } = new Vector3(0, 0, 0);
         // Object's scale in world space
-        public Vector3 scale { get; protected set; }
+        public Vector3 scale { get; protected set; } = new Vector3(1, 1, 1);
         // Object's velocity in world space
-        public Vector3 velocity { get; protected set; }
+        public Vector3 velocity { get; protected set; } = new Vector3(0, 0, 0);
 
 
         // Directional vectors
@@ -29,7 +30,7 @@ namespace OpenGL_Learning.Engine
         public Vector3 rightVector { get; protected set; }
 
 
-        public GameWorldObject(Engine inEngine) : base(inEngine) { }
+        public GameWorldObject(Engine inEngine) : base(inEngine) { OnTransformationUpdated(); }
 
         public override void onSpawned()
         {
@@ -54,16 +55,14 @@ namespace OpenGL_Learning.Engine
 
 
         // Sets a new rotation for this object in world space in form a quaternion
-        public void SetRotation(Quaternion rotation) { this.rotation = rotation; OnTransformationUpdated(); }
-
-        // Sets a new rotation for this object in world space in form a vector of angles
-        public void SetRotation(Vector3 angles) { this.rotation = Quaternion.FromEulerAngles(angles); OnTransformationUpdated(); }
+        public void SetRotation(Vector3 rotation) { this.rotation = rotation; OnTransformationUpdated(); }
 
         // Adds angular offset to the object in world space
-        public void AddRotation(Quaternion rotation) { this.rotation *= rotation; OnTransformationUpdated(); }
-
-        // Adds angular offset to the object in world space
-        public void AddRotation(Vector3 angles) { this.rotation *= Quaternion.FromEulerAngles(angles); OnTransformationUpdated(); }
+        public void AddRotation(Vector3 additiveRotation) 
+        {
+            rotation += additiveRotation;
+            OnTransformationUpdated(); 
+        }
 
 
         // Sets object's scale
@@ -74,7 +73,14 @@ namespace OpenGL_Learning.Engine
         protected virtual void OnTransformationUpdated() 
         {
             // Recalculating directional vectors
-            forwardVector = rotation * Vector3.UnitX;
+
+            Vector3 newForwardVector = new Vector3();
+            newForwardVector.X = MathF.Cos(MathHelper.DegreesToRadians(rotation.Z)) * MathF.Cos(MathHelper.DegreesToRadians(rotation.Y));
+            newForwardVector.Y = MathF.Sin(MathHelper.DegreesToRadians(rotation.Z));
+            newForwardVector.Z = MathF.Cos(MathHelper.DegreesToRadians(rotation.Z)) * MathF.Sin(MathHelper.DegreesToRadians(rotation.Y));
+
+            forwardVector = Vector3.Normalize(newForwardVector);
+
             rightVector = Vector3.Normalize(Vector3.Cross(forwardVector, Vector3.UnitY));
             upVector = Vector3.Normalize(Vector3.Cross(rightVector, forwardVector));
         }

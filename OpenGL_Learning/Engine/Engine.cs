@@ -32,16 +32,21 @@ namespace OpenGL_Learning.Engine
         // State
         public World currentWorld { get; private set; } = null;
 
+        public KeyboardState cachedKeyboardState { get; private set; } = null;
+        public MouseState cachedMouseState { get; private set; } = null;
+
 
         // ---------------
 
-        public Engine() { }
+        public Engine() { CreateWindow(); }
 
 
         // General
         public void StartEngine() 
         {
             GL.Enable(EnableCap.DepthTest);
+            gameWindow.Run();
+            
         }
 
         public void ShutdownEngine() 
@@ -53,9 +58,43 @@ namespace OpenGL_Learning.Engine
             foreach (World world in worlds) { world.OnDestroy(); }
         }
 
-        public void Update(float deltaTime) { }
+        public void Update(float deltaTime) 
+        {
+            if (currentWorld == null) return;
 
-        public void Render(float deltaTime) 
+            UpdateEngineInput(deltaTime);
+            currentWorld.Update(deltaTime);
+        }
+
+
+        public void CacheInput(KeyboardState keyboardState, MouseState mouseState)
+        {
+            cachedKeyboardState = keyboardState;
+            cachedMouseState = mouseState;
+        }
+
+        protected void UpdateEngineInput(float deltaTime) 
+        {
+
+            // Engine-level input
+
+            if (cachedKeyboardState.IsKeyDown(Keys.Escape))
+            {
+                gameWindow.Close();
+            }
+
+            if (cachedKeyboardState.IsKeyReleased(Keys.F1) && cachedKeyboardState.IsKeyDown(Keys.LeftShift))
+            {
+                if (cursorGrabbed) ShowCursor();
+                else GrabCursor();
+
+                cursorGrabbed = !cursorGrabbed;
+
+                if (currentWorld != null) { currentWorld.worldCamera.SetMouseInputEnabled(cursorGrabbed); }
+            }
+        }
+
+        public void Render(float deltaTime)
         {
             if (currentWorld == null) return;
 
@@ -74,13 +113,11 @@ namespace OpenGL_Learning.Engine
             currentWorld.RenderWorld(deltaTime);
         }
 
-        public void UpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState) { }
-
 
         // Window management
 
         // Creates a new game window if one isn't already present
-        public void CreateWindow()
+        protected void CreateWindow()
         {
             if (gameWindow != null) return;
                 
@@ -95,6 +132,8 @@ namespace OpenGL_Learning.Engine
             windowHeight = newHeight;
 
             if (currentWorld != null) { currentWorld.worldCamera.UpdateWindowSize(windowWidth, windowHeight); }
+
+            GL.Viewport(0, 0, windowWidth, windowHeight);
         }
 
         public void GrabCursor() 
@@ -143,8 +182,11 @@ namespace OpenGL_Learning.Engine
         public int CreateWorld() 
         { 
             worlds.Add(new World(this)); 
-            worlds[worlds.Count - 1].OnLoad(); 
-            
+            worlds[worlds.Count - 1].OnLoad();
+
+            if (currentWorld == null) currentWorld = worlds[worlds.Count - 1];
+
+
             return worlds.Count - 1; 
         }
 
@@ -160,5 +202,13 @@ namespace OpenGL_Learning.Engine
         }
 
         public World GetWorld(int handle) { return worlds[handle]; }
+
+        public void SetCurrentWolrd(int handle)
+        {
+            if (worlds.Count <= handle) return;
+            currentWorld = worlds[handle];
+        }
+
+        public World GetCurrentWolrd() { return currentWorld; }
     }
 }

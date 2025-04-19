@@ -5,8 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.meshObjects;
+using OpenTK.Mathematics;
 
-namespace Program
+namespace ProgramNameSpace
 {
     internal class Game
     {
@@ -28,19 +29,27 @@ namespace Program
             int aTexture = engine.AddTexture(new Texture(textureFolder + "a.png"));
 
             // Creating world and objects
-            int world = engine.CreateWorld();
+            World world = engine.GetWorld(engine.CreateWorld());
 
-            engine.GetWorld(world).AddObject(new CubeObject(engine, engine.GetShader(defaultShader), new Texture[] { engine.GetTexture(woodTexture) }));
-            engine.GetWorld(world).AddObject(new PlaneObject(engine, engine.GetShader(defaultShader), new Texture[] { engine.GetTexture(aTexture) }));
-            engine.GetWorld(world).AddObject(new GridObject(100, 100, 1, engine, engine.GetShader(waterShader), new Texture[] { engine.GetTexture(waterTexture) }));
 
+            CubeObject cube = new CubeObject(engine, defaultShader, new int[] { woodTexture });
+            PlaneObject plane = new PlaneObject(engine, defaultShader, new int[] { aTexture });
+            GridObject waterGrid = new GridObject(100, 100, 1, engine, waterShader, new int[] { waterTexture });
+
+            world.AddObject(cube);
+            world.AddObject(plane);
+            world.AddObject(waterGrid);
+            
             // Objects
 
-            objects[1].AddWorldOffset(new Vector3(-1f, 3f, -3f));
-            objects[2].AddWorldOffset(new Vector3(0f, -3f, -5f));
+            plane.AddLocation(new Vector3(-1f, 3f, -3f));
+            waterGrid.SetLocation(new Vector3(-50f, -3f, -50f));
 
-            objects[0].SetWorldLocation(new Vector3(1f, 3f, -10f));
-            objects[0].SetScale(new Vector3(5f, 5f, 5f));
+            cube.SetLocation(new Vector3(1f, 3f, -10f));
+            cube.SetScale(new Vector3(5f, 5f, 5f));
+
+
+            engine.StartEngine();
         }
     }
 }

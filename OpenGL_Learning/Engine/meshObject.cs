@@ -59,15 +59,17 @@ namespace OpenGL_Learning.Engine
         protected Matrix4 rotationMatrix { get; set; } = Matrix4.Identity;
         protected Matrix4 scaleMatrix { get; set; } = Matrix4.Identity;
 
-        public MeshObject(Engine inEngine) : base(inEngine) { }
+        public MeshObject(Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine) 
+        {
+            shader = engine.GetShader(shaderHandle);
+
+            textures = new Texture[textureHandles.Length];
+            for (int i = 0; i < textureHandles.Length; i++) { textures[i] = engine.GetTexture(textureHandles[i]); }
+        }
 
         // Must be called at the end of child constructor
-        protected void InitMeshObject(Shader inShader, Texture[] inTextures)
+        protected void InitMeshObject()
         {
-            // Filling out references
-            shader = inShader;
-            textures = inTextures;
-
             //
             generateMeshData();
 
@@ -165,7 +167,7 @@ namespace OpenGL_Learning.Engine
             
             // Updating transformation matricies
             locationMatrix = Matrix4.CreateTranslation(location);
-            rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
+            rotationMatrix = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X)) * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotation.Y)) * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
             scaleMatrix = Matrix4.CreateScale(scale);
         }
     }

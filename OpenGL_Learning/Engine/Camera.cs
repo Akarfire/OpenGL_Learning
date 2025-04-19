@@ -4,6 +4,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,18 +12,14 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace OpenGL_Learning.Engine
 {
-    public class Camera: GameWorldObject
+    public class Camera: GameWorldObject, InputInterface
     {
 
         private float speed = 6f;
         private int screenWidth;
         private int screenHeight;
         private float fov = 60f;
-        private float sensitivity = 60f;
-
-        Vector3 up = Vector3.UnitY;
-        Vector3 forward = -Vector3.UnitZ;
-        Vector3 right = Vector3.UnitX;
+        private float sensitivity = 30f;
 
         private bool firstMove = true;
         public Vector2 lastMousePosition;
@@ -40,22 +37,21 @@ namespace OpenGL_Learning.Engine
 
         public Matrix4 GetViewMatrix()
         {
-            return Matrix4.LookAt(location, location + forward, up);
+            return Matrix4.LookAt(location, location + forwardVector, upVector);
         }
         public Matrix4 GetProjectionMatrix()
         {
             return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), (float)screenWidth / screenHeight, 0.1f, 100f);
         }
 
-        public void InputController(KeyboardState keyboardInput, MouseState mouseInput, FrameEventArgs eventArgs)
+        public void InputController(float deltaTime, KeyboardState keyboardInput, MouseState mouseInput)
         {
-            float deltaTime = (float)eventArgs.Time;
 
             if (keyboardInput.IsKeyDown(Keys.W)) { AddLocation(forwardVector * speed * deltaTime); }
-            if (keyboardInput.IsKeyDown(Keys.S)) { AddLocation(forwardVector * speed * deltaTime); }
-            if (keyboardInput.IsKeyDown(Keys.A)) { AddLocation(rightVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.S)) { AddLocation(-1 * forwardVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.A)) { AddLocation(-1 * rightVector * speed * deltaTime); }
             if (keyboardInput.IsKeyDown(Keys.D)) { AddLocation(rightVector * speed * deltaTime); }
-            if (keyboardInput.IsKeyDown(Keys.Q)) { AddLocation(upVector * speed * deltaTime); }
+            if (keyboardInput.IsKeyDown(Keys.Q)) { AddLocation(-1 * upVector * speed * deltaTime); }
             if (keyboardInput.IsKeyDown(Keys.E)) { AddLocation(upVector * speed * deltaTime); }
 
             if (firstMove)
@@ -72,13 +68,16 @@ namespace OpenGL_Learning.Engine
                 lastMousePosition.X = mouseInput.X;
                 lastMousePosition.Y = mouseInput.Y;
 
-                AddRotation(new Vector3(0, deltaY * sensitivity * deltaTime, deltaX * sensitivity * deltaTime));
+
+                AddRotation(new Vector3(0,  deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
+                //SetRotation(Quaternion.FromAxisAngle(rightVector, );
+                //AddRotation(Quaternion.FromAxisAngle(upVector, deltaX * sensitivity * deltaTime));
             }
         }
 
-        public void Update(KeyboardState keyboardInput, MouseState mouseInput, FrameEventArgs eventArgs)
+        public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState) 
         {
-            InputController(keyboardInput, mouseInput, eventArgs);
+            InputController(deltaTime, keyboardState, mouseState);
         }
 
 

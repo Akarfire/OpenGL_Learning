@@ -1,11 +1,10 @@
 ﻿
-using OpenGL_Learning.Engine;
+using ProgramNameSpace;
 
 class Program
 { 
     static void Main(string[] args)
     {
-
+        Game newGame = new Game(); 
     }
-
 }

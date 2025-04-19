@@ -10,7 +10,7 @@ namespace OpenGL_Learning.Engine.meshObjects
 {
     internal class PlaneObject : MeshObject
     {
-        public PlaneObject(Engine inEngine, Shader inShader, Texture[] inTextures): base(inEngine)
+        public PlaneObject(Engine inEngine, int shaderHandle, int[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
         {
             vertices = new List<Vertex>
             {
@@ -26,7 +26,7 @@ namespace OpenGL_Learning.Engine.meshObjects
                 new Triangle(2, 3, 0)
             };
 
-            InitMeshObject(inShader, inTextures);
+            InitMeshObject();
         }
     }
 }

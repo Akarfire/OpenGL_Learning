@@ -48,6 +48,7 @@ namespace OpenGL_Learning.Engine
             }
 
             worldCamera.UpdateWindowSize(engine.windowWidth, engine.windowHeight);
+            worldCamera.SetMouseInputEnabled(engine.cursorGrabbed);
         }
 
         public void OnDestroy() { }
@@ -59,6 +60,8 @@ namespace OpenGL_Learning.Engine
             foreach (GameObject obj in objects) 
             {
                 obj.onUpdated(deltaTime);
+
+                if (obj is InputInterface) ((InputInterface)obj).onUpdateInput(deltaTime, engine.cachedKeyboardState, engine.cachedMouseState);
             }
         }
 
@@ -66,11 +69,9 @@ namespace OpenGL_Learning.Engine
         {
             foreach (GameObject obj in objects)
             {
-                if (obj is MeshObject) ((MeshObject)obj).Render(worldCamera)
+                if (obj is MeshObject) ((MeshObject)obj).Render(worldCamera);
             }
         }
-
-        public void UpdateInput(float deltaTime) { }
 
 
         // Object management
@@ -83,5 +84,7 @@ namespace OpenGL_Learning.Engine
             objects[handle].onDestroyed();
             objects.RemoveAt(handle);
         }
+
+        public GameObject GetObject(int handle) { return objects[handle]; }
     }
 }
