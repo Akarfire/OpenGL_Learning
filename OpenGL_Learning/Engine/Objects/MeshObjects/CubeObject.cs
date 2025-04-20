@@ -5,12 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenGL_Learning.Engine.objects;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 namespace OpenGL_Learning.Engine.objects.meshObjects
 {
     internal class CubeObject : MeshObject
     {
-        public CubeObject(Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
+        public CubeObject(Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
         {
 
             vertices = new List<Vertex>()

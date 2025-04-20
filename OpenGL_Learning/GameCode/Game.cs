@@ -7,6 +7,7 @@ using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.objects.meshObjects;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Desktop;
 
 namespace GameCode
 {
@@ -39,28 +40,28 @@ namespace GameCode
 
             PhysicsScript cubePhysics = new PhysicsScript();
             cubePhysics.enableGravityForce = true;
+            cubePhysics.dragForceStrenght = 0.5f;
             cube.AddScript("Physics", cubePhysics);
 
             WaterBouancyScript cubeBouancy = new WaterBouancyScript();
             cube.AddScript("Bouancy", cubeBouancy);
 
+            cube.SetLocation(new Vector3(0, 1, 0));
+            cube.SetScale(new Vector3(5f, 5f, 5f));
 
-            PlaneObject plane = new PlaneObject(engine, "Default_S", new string[] { "a_T" });
-            world.AddObject(plane);
+
+            PlayerShip ship = new PlayerShip(engine);
+            world.AddObject(ship);
+
+            ship.SetLocation(new Vector3(5, 1, 5));
 
 
             GridObject waterGrid = new GridObject(100, 100, 1, engine, "Water_S", new string[] { "Water_T" });
             world.AddObject(waterGrid);
 
-            // Objects
-
-            plane.AddLocation(new Vector3(-1f, 3f, -3f));
-            waterGrid.SetLocation(new Vector3(-50f, -3f, -50f));
+            waterGrid.SetLocation(new Vector3(-50f, 0f, -50f));
 
             world.worldCamera.AddLocation(new Vector3(0, 10, 0));
-
-            cube.SetLocation(world.worldCamera.location + world.worldCamera.forwardVector * 20);
-            cube.SetScale(new Vector3(5f, 5f, 5f));
 
 
             // Starting the engine

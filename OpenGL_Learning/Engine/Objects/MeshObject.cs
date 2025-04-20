@@ -60,12 +60,16 @@ namespace OpenGL_Learning.Engine.objects
         protected Matrix4 rotationMatrix { get; set; } = Matrix4.Identity;
         protected Matrix4 scaleMatrix { get; set; } = Matrix4.Identity;
 
-        public MeshObject(Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine)
+        public MeshObject(Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine)
         {
-            shader = engine.shaders[shaderHandle];
+            if (shaderHandle != null)
+                shader = engine.shaders[shaderHandle];
 
-            textures = new Texture[textureHandles.Length];
-            for (int i = 0; i < textureHandles.Length; i++) { textures[i] = engine.textures[textureHandles[i]]; }
+            if (textureHandles != null)
+            {
+                textures = new Texture[textureHandles.Length];
+                for (int i = 0; i < textureHandles.Length; i++) { textures[i] = engine.textures[textureHandles[i]]; }
+            }
         }
 
         // Must be called at the end of child constructor
@@ -131,6 +135,18 @@ namespace OpenGL_Learning.Engine.objects
             }
         }
 
+        public void SetShader(string shaderName)
+        {
+            shader = engine.shaders[shaderName];
+        }
+
+        public void SetTextures(string[] textureNames)
+        {
+            textures = new Texture[textureNames.Length];
+
+            for (int i = 0; i < textureNames.Length; i++) { textures[i] = engine.textures[textureNames[i]]; }
+        }
+
         public void Render(Camera camera)
         {
             // Receiving matricies from the camera
@@ -168,7 +184,7 @@ namespace OpenGL_Learning.Engine.objects
 
             // Updating transformation matricies
             locationMatrix = Matrix4.CreateTranslation(location);
-            rotationMatrix = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X)) * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotation.Y)) * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
+            rotationMatrix = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X)) * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-1 *rotation.Y)) * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
             scaleMatrix = Matrix4.CreateScale(scale);
         }
     }

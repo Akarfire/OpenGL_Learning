@@ -87,6 +87,8 @@ void main()
 		vec3(	0, 
 				perlin( vec2(aPosition.x / (scale * scaleX) + time * speed, aPosition.z / (scale * scaleZ) + 0.1 * time * speed), 1)
 				, 0);
+
+	newPos = aPosition + 1 * vec3(0, sin(aPosition.x / 4 + time * 0.5), 0);
 	
 	gl_Position = vec4(newPos, 1.0) * model * view * projection;
 	

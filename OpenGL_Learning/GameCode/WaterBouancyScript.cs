@@ -29,18 +29,21 @@ namespace GameCode
 
         protected override void OnScriptUpdated(float deltaTime)
         {
-            base.OnScriptUpdated(deltaTime);
-
             if (physicsScript != null) 
             {
-                float surfaceLevel = 0;
+                // sin(aPosition.x / 4 + time * 0.5)
+                float surfaceLevel = (float)Math.Sin(physicsScript.ownerWO.location.X / 4 + owner.engine.currentWorld.time * 0.5);
 
                 if (physicsScript.ownerWO.location.Y < surfaceLevel) 
                     physicsScript.AddForce(
                         -1 * physicsScript.gravityDirection * physicsScript.gravityAcceleration * deltaTime * physicsScript.objectMass 
-                        * 3 * (float)Math.Clamp(Math.Pow(physicsScript.ownerWO.location.Y - surfaceLevel, 2) / 0.15f, 0.15f, 1)
+                        * 2 * (float)Math.Clamp((physicsScript.ownerWO.location.Y - surfaceLevel) * (physicsScript.ownerWO.location.Y - surfaceLevel), 0f, 1)
+                        
+                        + Vector3.UnitX * -0.000000025f
                         );
             }
+
+            base.OnScriptUpdated(deltaTime);
         }
     }
 }

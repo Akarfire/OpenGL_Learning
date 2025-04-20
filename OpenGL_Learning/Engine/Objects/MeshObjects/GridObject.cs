@@ -12,7 +12,7 @@ namespace OpenGL_Learning.Engine.objects.meshObjects
     {
         protected int sizeX, sizeZ;
         protected float cellSize;
-        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
+        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
         {
             sizeX = inSizeX;
             sizeZ = inSizeZ;

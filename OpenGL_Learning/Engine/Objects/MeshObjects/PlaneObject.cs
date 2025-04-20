@@ -10,7 +10,7 @@ namespace OpenGL_Learning.Engine.objects.meshObjects
 {
     internal class PlaneObject : MeshObject
     {
-        public PlaneObject(Engine inEngine, string shaderHandle, string[] textureHandles) : base(inEngine, shaderHandle, textureHandles)
+        public PlaneObject(Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
         {
             vertices = new List<Vertex>
             {
