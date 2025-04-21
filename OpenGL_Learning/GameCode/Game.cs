@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.objects.meshObjects;
+using OpenGL_Learning.Engine.Objects.MeshObjects;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Desktop;
@@ -29,6 +30,7 @@ namespace GameCode
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));
             engine.AddTexture("Water_T", new Texture(textureFolder + "sea-water-512x512.png"));
             engine.AddTexture("a_T", new Texture(textureFolder + "a.png"));
+            engine.AddTexture("Shooter_T", new Texture(textureFolder + "Shooter_ColorMap.png"));
 
 
             // Creating world and objects
@@ -54,6 +56,11 @@ namespace GameCode
             world.AddObject(ship);
 
             ship.SetLocation(new Vector3(5, 1, 5));
+
+
+            FbxMeshObject fbxTest = new FbxMeshObject(engine, "D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx", "Default_S", new string[] { "Shooter_T" });
+            world.AddObject(fbxTest);
+            fbxTest.AddLocation(new Vector3(0, 5, 0));
 
 
             GridObject waterGrid = new GridObject(100, 100, 1, engine, "Water_S", new string[] { "Water_T" });
