@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine;
-using OpenGL_Learning.Engine.objects.meshObjects;
+﻿using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
+using OpenGL_Learning.Engine.Player;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
+using OpenGL_Learning.Engine.Objects;
 
 namespace GameCode
 {
-    internal class PlayerShip : CubeObject, InputInterface
+    internal class PlayerShip : MeshObject, InputInterface
     {
 
         // Scripts
@@ -25,10 +21,10 @@ namespace GameCode
 
         // ----
 
-        public PlayerShip(Engine inEngine) : base(inEngine)
+        public PlayerShip(Engine inEngine) : base(inEngine, "Ship_M")
         {
             SetShader("Default_S");
-            SetTextures(new string[] { "Wood_T" });
+            SetTextures(new string[] { "Shooter_T" });
 
             physicsScript = new PhysicsScript();
 
@@ -46,7 +42,7 @@ namespace GameCode
             AddScript("Bouancy", bouancyScript);
             bouancyScript.AttachScript(this);
 
-            SetScale(new Vector3(5, 5, 1));
+            SetScale(new Vector3(2, 2, 2));
         }
 
         public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState)

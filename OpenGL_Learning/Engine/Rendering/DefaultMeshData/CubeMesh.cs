@@ -1,19 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
-using OpenTK.Mathematics;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+﻿using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.objects.meshObjects
+namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    internal class CubeObject : MeshObject
+    public class CubeMesh: MeshData
     {
-        public CubeObject(Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
+        public CubeMesh() 
         {
-
             vertices = new List<Vertex>()
             {
                 new Vertex(new Vector3( -0.5f,  0.5f,   0.5f), new Vector2(0.0f, 0.0f)),
@@ -48,7 +40,7 @@ namespace OpenGL_Learning.Engine.objects.meshObjects
                 new Triangle(6, 7, 3)
             };
 
-            InitMeshObject();
+            InitMeshData();
         }
     }
 }

@@ -1,13 +1,8 @@
-﻿using OpenTK.Graphics.Wgl;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
+﻿using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Graphics.OpenGL4;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OpenGL_Learning.Engine.Rendering;
+
 
 namespace OpenGL_Learning.Engine
 {
@@ -17,6 +12,7 @@ namespace OpenGL_Learning.Engine
         private GameEngineWindow gameWindow = null;
 
         // Entity lists
+        public Dictionary<string, MeshData> meshes { get; private set; } = new Dictionary<string, MeshData>();
         public Dictionary<string, Shader> shaders { get; private set; } = new Dictionary<string, Shader>();
         public Dictionary<string, Texture> textures { get; private set; } = new Dictionary<string, Texture>();
         public Dictionary<string, World> worlds { get; private set; } = new Dictionary<string, World>();
@@ -98,18 +94,6 @@ namespace OpenGL_Learning.Engine
         {
             if (currentWorld == null) return;
 
-            // Updating shaders before rendering
-            foreach (var shaderPair in shaders)
-            {
-                var shader = shaderPair.Value;
-                // Engine-level shader uniforms
-
-                // World time uniform
-                int timeLocation = GL.GetUniformLocation(shader.GetHandle(), "time");
-                if (timeLocation != -1)
-                    GL.Uniform1(timeLocation, currentWorld.time);
-            }
-
             // Rendering current world
             currentWorld.RenderWorld(deltaTime);
         }
@@ -149,11 +133,23 @@ namespace OpenGL_Learning.Engine
         }
 
 
-        // Registers a new shader in the engine, returns in-engine shader handle (not openGL handle) 
-        public void AddShader(string shaderName, Shader shader) { shaders.Add(shaderName, shader);}
+        // Registers new mesh data in the engine
+        public void AddMeshData(string meshName, MeshData mesh) { meshes.Add(meshName, mesh);}
 
-        // Removes a shader from the engine's registry by it's in-engine shader handle (not openGL handle) 
-        public void RemoveShader(string shaderName) 
+        // Removes mesh data from the engine's registry
+        public void RemoveMeshData(string meshName) 
+        {
+            if (!meshes.ContainsKey(meshName)) return;
+
+            meshes[meshName].Destroy();
+            meshes.Remove(meshName);
+        }
+
+        // Registers a new shader in the engine
+        public void AddShader(string shaderName, Shader shader) { shaders.Add(shaderName, shader); }
+
+        // Removes a shader from the engine's registry
+        public void RemoveShader(string shaderName)
         {
             if (!shaders.ContainsKey(shaderName)) return;
 
@@ -161,11 +157,10 @@ namespace OpenGL_Learning.Engine
             shaders.Remove(shaderName);
         }
 
-
-        // Registers a new texture in the engine, returns in-engine texture handle (not openGL handle) 
+        // Registers a new texture in the engine
         public void AddTexture(string textureName, Texture texture) { textures.Add(textureName, texture);}
 
-        // Removes a texture from the engine's registry by it's in-engine texture handle (not openGL handle) 
+        // Removes a texture from the engine's registry
         public void RemoveTexture(string textureName)
         {
             if (!textures.ContainsKey(textureName)) return;
@@ -174,7 +169,7 @@ namespace OpenGL_Learning.Engine
             textures.Remove(textureName);
         }
 
-        // Creates a new game world and returns it's handle
+        // Creates a new game world
         public World CreateWorld(string worldName) 
         {
             World newWorld = new World(this);
@@ -187,7 +182,7 @@ namespace OpenGL_Learning.Engine
             return newWorld;
         }
 
-        // Destroys a game world with a given handle
+        // Destroys a game world
         public void DestroyWorld(string worldName) 
         {
             if (!worlds.ContainsKey(worldName)) { Console.WriteLine("Error world '" + worldName + "' does not exist!"); return; }
@@ -198,6 +193,7 @@ namespace OpenGL_Learning.Engine
             worlds.Remove(worldName);
         }
 
+        // Changes current game world
         public void SetCurrentWolrd(string worldName)
         {
             if (!worlds.ContainsKey(worldName)) { Console.WriteLine("Error world '" + worldName + "' does not exist!"); return; }

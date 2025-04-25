@@ -1,4 +1,4 @@
-﻿using OpenGL_Learning.Engine.objects;
+﻿using OpenGL_Learning.Engine.Objects;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OpenGL_Learning.Engine.objects
+namespace OpenGL_Learning.Engine.Objects
 {
     public class GameObject
     {

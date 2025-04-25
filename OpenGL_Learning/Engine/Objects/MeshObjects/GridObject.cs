@@ -1,25 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
+using OpenGL_Learning.Engine.Rendering;
 
-namespace OpenGL_Learning.Engine.objects.meshObjects
+namespace OpenGL_Learning.Engine.Objects.MeshObjects
 {
     internal class GridObject : MeshObject
     {
         protected int sizeX, sizeZ;
         protected float cellSize;
-        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
+        public GridObject(int inSizeX, int inSizeZ, float inCellSize, Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, null, shaderHandle, textureHandles)
         {
             sizeX = inSizeX;
             sizeZ = inSizeZ;
             cellSize = inCellSize;
 
-            vertices = new List<Vertex>();
-            triangles = new List<Triangle>();
+            List<Vertex> vertices = new List<Vertex>();
+            List<Triangle> triangles = new List<Triangle>();
 
             for (int x = 0; x < inSizeX; x++)
                 for (int z = 0; z < inSizeZ; z++)
@@ -37,7 +32,7 @@ namespace OpenGL_Learning.Engine.objects.meshObjects
                     }
                 }
 
-            InitMeshObject();
+            meshData = new MeshData(vertices, triangles);
         }
     }
 }

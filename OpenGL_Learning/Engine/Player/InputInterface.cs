@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OpenGL_Learning.Engine
+namespace OpenGL_Learning.Engine.Player
 {
     internal interface InputInterface
     {

@@ -1,25 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using OpenTK.Graphics.OpenGL4;
+﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
+
 
 namespace OpenGL_Learning.Engine
 {
     public class Shader
     {
-
+        Engine engine;
         int shaderHandle;
 
-        public Shader(string vertexShaderFile, string fragmentShaderFile)
+        public Shader(Engine inEngine, string vertexShaderFile, string fragmentShaderFile)
         {
-
+            engine = inEngine;
             shaderHandle = GL.CreateProgram();
 
             int vertexShader = GL.CreateShader(ShaderType.VertexShader);
@@ -62,6 +54,9 @@ namespace OpenGL_Learning.Engine
             GL.UseProgram(shaderHandle);
 
             GL.Uniform1(GL.GetUniformLocation(GetHandle(), "texture0"), 0);
+
+            // Engine level-uniforms
+            GL.Uniform1(GL.GetUniformLocation(GetHandle(), "time"), engine.currentWorld.time);
         }
 
         public void bindMatrices(Matrix4 model, Matrix4 view, Matrix4 projection)

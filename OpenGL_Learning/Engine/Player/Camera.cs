@@ -1,17 +1,9 @@
-﻿using OpenGL_Learning.Engine.objects;
-using OpenTK.Graphics.ES11;
-using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
+﻿using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Tracing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
+using OpenGL_Learning.Engine.Player;
 
-namespace OpenGL_Learning.Engine.objects.player
+
+namespace OpenGL_Learning.Engine.Objects.Player
 {
     public class Camera : GameWorldObject, InputInterface
     {

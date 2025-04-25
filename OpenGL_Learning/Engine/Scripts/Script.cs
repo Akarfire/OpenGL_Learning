@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
+using OpenGL_Learning.Engine.Objects;
 
 namespace OpenGL_Learning.Engine
 {

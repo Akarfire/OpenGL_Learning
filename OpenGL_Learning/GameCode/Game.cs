@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine;
-using OpenGL_Learning.Engine.objects.meshObjects;
+﻿using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.Objects.MeshObjects;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
+using OpenGL_Learning.Engine.Rendering;
+using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
 using OpenTK.Mathematics;
-using OpenTK.Windowing.Desktop;
+using OpenGL_Learning.Engine.Objects;
+
 
 namespace GameCode
 {
@@ -22,9 +19,13 @@ namespace GameCode
 
         public Game()
         {
+            // Loading meshes
+            engine.AddMeshData("Cube_M", new CubeMesh());
+            engine.AddMeshData("Ship_M", new MeshFromFile("D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx"));
+
             // Loading shaders
-            engine.AddShader("Default_S", new Shader(shaderFolder + "shader.vert", shaderFolder + "shader.frag"));
-            engine.AddShader("Water_S", new Shader(shaderFolder + "shaderWater.vert", shaderFolder + "shaderWater.frag"));
+            engine.AddShader("Default_S", new Shader(engine, shaderFolder + "shader.vert", shaderFolder + "shader.frag"));
+            engine.AddShader("Water_S", new Shader(engine, shaderFolder + "shaderWater.vert", shaderFolder + "shaderWater.frag"));
 
             // Loading textures
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));
@@ -37,7 +38,13 @@ namespace GameCode
             World world = engine.CreateWorld("MyWorld");
 
 
-            CubeObject cube = new CubeObject(engine, "Default_S", new string[] { "Wood_T" });
+            GridObject waterGrid = new GridObject(200, 200, 2, engine, "Water_S", new string[] { "Water_T" });
+            world.AddObject(waterGrid);
+
+            waterGrid.SetLocation(new Vector3(-200f, 0f, -200f));
+
+
+            MeshObject cube = new MeshObject(engine, "Cube_M", "Default_S", new string[] { "Wood_T" });
             world.AddObject(cube);
 
             PhysicsScript cubePhysics = new PhysicsScript();
@@ -58,18 +65,7 @@ namespace GameCode
             ship.SetLocation(new Vector3(5, 1, 5));
 
 
-            FbxMeshObject fbxTest = new FbxMeshObject(engine, "D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx", "Default_S", new string[] { "Shooter_T" });
-            world.AddObject(fbxTest);
-            fbxTest.AddLocation(new Vector3(0, 5, 0));
-
-
-            GridObject waterGrid = new GridObject(100, 100, 1, engine, "Water_S", new string[] { "Water_T" });
-            world.AddObject(waterGrid);
-
-            waterGrid.SetLocation(new Vector3(-50f, 0f, -50f));
-
             world.worldCamera.AddLocation(new Vector3(0, 10, 0));
-
 
             // Starting the engine
             engine.StartEngine();

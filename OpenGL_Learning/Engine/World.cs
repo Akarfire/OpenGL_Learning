@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
-using OpenGL_Learning.Engine.objects.player;
+﻿using OpenGL_Learning.Engine.Objects;
+using OpenGL_Learning.Engine.Objects.Player;
+using OpenGL_Learning.Engine.Player;
 
 namespace OpenGL_Learning.Engine
 {

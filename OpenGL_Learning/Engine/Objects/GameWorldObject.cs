@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenTK.Mathematics;
-using static System.Net.Mime.MediaTypeNames;
+﻿using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.objects
+namespace OpenGL_Learning.Engine.Objects
 {
     public class GameWorldObject : GameObject
     {

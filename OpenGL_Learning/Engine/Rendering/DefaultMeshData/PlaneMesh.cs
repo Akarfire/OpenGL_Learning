@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.objects.meshObjects
+namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    internal class PlaneObject : MeshObject
+    internal class PlaneMesh: MeshData
     {
-        public PlaneObject(Engine inEngine, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
+        public PlaneMesh() 
         {
             vertices = new List<Vertex>
             {
@@ -26,7 +20,7 @@ namespace OpenGL_Learning.Engine.objects.meshObjects
                 new Triangle(2, 3, 0)
             };
 
-            InitMeshObject();
+            InitMeshData();
         }
     }
 }

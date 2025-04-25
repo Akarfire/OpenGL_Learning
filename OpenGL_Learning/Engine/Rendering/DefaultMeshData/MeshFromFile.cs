@@ -1,25 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenGL_Learning.Engine.objects;
+﻿using OpenGL_Learning.Engine.Objects;
 using OpenTK.Mathematics;
 using Assimp;
 
-namespace OpenGL_Learning.Engine.Objects.MeshObjects
+namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    internal class FbxMeshObject: MeshObject
+    internal class MeshFromFile: MeshData
     {
-        public FbxMeshObject(Engine inEngine, string fbxFilePath, string shaderHandle = null, string[] textureHandles = null) : base(inEngine, shaderHandle, textureHandles)
+        public MeshFromFile(string filePath)
         {
             AssimpContext importer = new AssimpContext();
-            Scene scene = importer.ImportFile(fbxFilePath, PostProcessSteps.Triangulate | PostProcessSteps.GenerateNormals);
+            Scene scene = importer.ImportFile(filePath, PostProcessSteps.Triangulate | PostProcessSteps.GenerateNormals);
 
             vertices = new List<Vertex>();
             triangles = new List<Triangle>();
 
-            foreach (var mesh in scene.Meshes) 
+            foreach (var mesh in scene.Meshes)
             {
                 for (int i = 0; i < mesh.Vertices.Count; i++)
                 {
@@ -38,8 +33,7 @@ namespace OpenGL_Learning.Engine.Objects.MeshObjects
                 }
             }
 
-
-            InitMeshObject();
+            InitMeshData();
         }
     }
 }
