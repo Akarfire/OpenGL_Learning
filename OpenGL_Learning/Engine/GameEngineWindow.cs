@@ -31,9 +31,6 @@ namespace OpenGL_Learning.Engine
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.ClearColor(0.0f, 0.0f, 0f, 1f);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
             engine.Render((float)args.Time);
 
             Context.SwapBuffers();

@@ -2,6 +2,9 @@
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Graphics.OpenGL4;
 using OpenGL_Learning.Engine.Rendering;
+using OpenTK.Mathematics;
+using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
+using OpenGL_Learning.Engine.Objects;
 
 
 namespace OpenGL_Learning.Engine
@@ -32,6 +35,19 @@ namespace OpenGL_Learning.Engine
         public MouseState cachedMouseState { get; private set; } = null;
 
 
+        // Rendering
+
+        // Buffering
+        int framebuffer = -1;
+        Texture sceneColorTexture = null;
+        Texture sceneDepthTexture = null;
+
+        public bool UsePostProcessing = false;
+        public string postProcessShader = "";
+
+        // Plane, to which the scene is going to be rendered (if post processing is enabled)
+        MeshObject renderPlane = null;
+
         // ---------------
 
         public Engine() { CreateWindow(); }
@@ -41,6 +57,49 @@ namespace OpenGL_Learning.Engine
         public void StartEngine() 
         {
             GL.Enable(EnableCap.DepthTest);
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+
+            // Creating a frame buffer
+            framebuffer = GL.GenFramebuffer();
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+
+            // Binding scene color texture to framebuffer (scene will be rendered here)
+            sceneColorTexture = new Texture(windowWidth, windowHeight);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, sceneColorTexture.textureHandle, 0);
+
+            // Binding scene depth texture to framebuffer
+            sceneDepthTexture = new Texture(windowWidth, windowHeight, PixelInternalFormat.DepthComponent24, PixelFormat.DepthComponent, PixelType.Float);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, sceneDepthTexture.textureHandle, 0);
+
+            // Modifying depth texture parameters
+            sceneDepthTexture.UseTexture(TextureUnit.Texture0);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)All.None);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            // Specifying draw/read buffers
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
+
+            // Error checking
+            if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+                throw new Exception("ERROR: Failed creating frame buffer");
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+            // Registering textures
+            AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
+            AddTexture("ENGINE_SceneDepth_T", sceneDepthTexture);
+
+            // Initiating render plane
+            AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
+
+            //"ENGINE_SceneColor_T", "ENGINE_SceneDepth_T"
+            renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
+            
+            // Running the window
             gameWindow.Run();
             
         }
@@ -71,7 +130,6 @@ namespace OpenGL_Learning.Engine
 
         protected void UpdateEngineInput(float deltaTime) 
         {
-
             // Engine-level input
 
             if (cachedKeyboardState.IsKeyDown(Keys.Escape))
@@ -92,10 +150,51 @@ namespace OpenGL_Learning.Engine
 
         public void Render(float deltaTime)
         {
+            if (UsePostProcessing)
+            {
+                // Binding frame buffer
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            }
+
+            // Clearing old stuff in the frame buffer
+            GL.ClearColor(0.0f, 0.0f, 0f, 1f);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
             if (currentWorld == null) return;
+
+            // Engine-level shader uniforms
+            foreach (var shaderPair in shaders)
+            {
+                var shader = shaderPair.Value;
+
+                shader.UseShader();
+
+                shader.SetUniform("time", currentWorld.time);
+
+                shader.SetUniform("light_direction", new Vector3(1, 1, 1).Normalized());
+                shader.SetUniform("ambient_light", 0.5f);
+
+                shader.SetUniform("camera_location", currentWorld.worldCamera.location);
+                shader.SetUniform("camera_vector", currentWorld.worldCamera.forwardVector);
+
+                shader.StopUsingShader();
+            }
 
             // Rendering current world
             currentWorld.RenderWorld(deltaTime);
+            
+            if (UsePostProcessing)
+            {
+                // Back to screen rendering
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+                // Clearing old stuff on screen
+                GL.ClearColor(0.0f, 0.0f, 0f, 1f);
+                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+                // Rendering screen to render plane
+                renderPlane.Render(currentWorld.worldCamera);
+            }
         }
 
 

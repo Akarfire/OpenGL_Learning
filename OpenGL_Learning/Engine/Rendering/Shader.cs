@@ -7,75 +7,66 @@ namespace OpenGL_Learning.Engine
     public class Shader
     {
         Engine engine;
-        int shaderHandle;
+
+        public int shaderHandle { get; private set; }
+
+        // Dictionary of all shader uniforms and it's locations
+        protected Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+
 
         public Shader(Engine inEngine, string vertexShaderFile, string fragmentShaderFile)
         {
             engine = inEngine;
             shaderHandle = GL.CreateProgram();
 
-            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-            GL.ShaderSource(vertexShader, LoadShaderSource(vertexShaderFile));
-            GL.CompileShader(vertexShader);
+            int vertexShader = CompileShader(ShaderType.VertexShader, vertexShaderFile);
+            int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentShaderFile);
 
-            GL.GetShader(vertexShader, ShaderParameter.CompileStatus, out int success1);
-            if (success1 == 0)
-            {
-                string infoLog = GL.GetShaderInfoLog(vertexShader);
-                Console.WriteLine(infoLog);
-            }
-
-            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, LoadShaderSource(fragmentShaderFile));
-            GL.CompileShader(fragmentShader);
-
-            GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, out int success2);
-            if (success2 == 0)
-            {
-                string infoLog = GL.GetShaderInfoLog(fragmentShader);
-                Console.WriteLine(infoLog);
-            }
-
-            // Binding
+            // Binding and linking the program
 
             GL.AttachShader(shaderHandle, vertexShader);
             GL.AttachShader(shaderHandle, fragmentShader);
 
             GL.LinkProgram(shaderHandle);
 
+            // Automatically registering uniforms
+            GL.GetProgram(shaderHandle, GetProgramParameterName.ActiveUniforms, out int uniformCount);
+
+            for (int i = 0; i < uniformCount; i++) 
+            {
+                GL.GetActiveUniform(shaderHandle, i, 256, out _, out _, out _, out string uniformName);
+                int location = GL.GetUniformLocation(shaderHandle, uniformName);
+                uniformLocations[uniformName] = location;
+            }
+
+            // Clean up
+            GL.DetachShader(shaderHandle, vertexShader);
+            GL.DetachShader(shaderHandle, fragmentShader);
+
             GL.DeleteShader(vertexShader);
             GL.DeleteShader(fragmentShader);
         }
 
-        public int GetHandle() { return shaderHandle; }
-
-        public void UseShader()
+        // Loads and compiles a shader of a given type
+        protected static int CompileShader(ShaderType type, string filePath) 
         {
-            GL.UseProgram(shaderHandle);
+            int handle = GL.CreateShader(type);
+            GL.ShaderSource(handle, LoadShaderSource(filePath));
+            GL.CompileShader(handle);
 
-            GL.Uniform1(GL.GetUniformLocation(GetHandle(), "texture0"), 0);
+            // Error check vertex shader
+            GL.GetShader(handle, ShaderParameter.CompileStatus, out int success);
+            if (success == 0)
+            {
+                string infoLog = GL.GetShaderInfoLog(handle);
+                throw new Exception($"ERROR: Failed to compile shader {filePath}:\n{infoLog}");
+            }
 
-            // Engine level-uniforms
-            GL.Uniform1(GL.GetUniformLocation(GetHandle(), "time"), engine.currentWorld.time);
+            return handle;
         }
 
-        public void bindMatrices(Matrix4 model, Matrix4 view, Matrix4 projection)
-        {
-            int modelLocation = GL.GetUniformLocation(GetHandle(), "model");
-            int viewLocation = GL.GetUniformLocation(GetHandle(), "view");
-            int projectionLocation = GL.GetUniformLocation(GetHandle(), "projection");
-
-            GL.UniformMatrix4(modelLocation, true, ref model);
-            GL.UniformMatrix4(viewLocation, true, ref view);
-            GL.UniformMatrix4(projectionLocation, true, ref projection);
-        }
-
-        public void DeleteShader()
-        {
-            GL.DeleteProgram(shaderHandle);
-        }
-
-        public static string LoadShaderSource(string filepath)
+        // Loads shader soruce code from file
+        protected static string LoadShaderSource(string filepath)
         {
             string shaderSource = "";
 
@@ -89,10 +80,73 @@ namespace OpenGL_Learning.Engine
 
             catch (Exception e)
             {
-                Console.WriteLine("Failed to load shader source file:" + e.Message);
+                throw new Exception("Failed to load shader source file:" + e.Message);
             }
 
             return shaderSource;
+        }
+
+
+
+        public void UseShader()
+        {
+            GL.UseProgram(shaderHandle);
+        }
+
+        public void StopUsingShader()
+        {
+            GL.UseProgram(0);
+        }
+
+        public void DeleteShader()
+        {
+            GL.DeleteProgram(shaderHandle);
+        }
+
+
+
+        // Uniform setters
+
+        public void SetUniform(string uniformName, int value) 
+        {
+            if (uniformLocations.TryGetValue(uniformName, out int location))
+                GL.Uniform1(location, value);
+        }
+
+        public void SetUniform(string name, float value)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.Uniform1(location, value);
+        }
+
+        public void SetUniform(string name, Vector2 value)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.Uniform2(location, value);
+        }
+
+        public void SetUniform(string name, Vector3 value)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.Uniform3(location, value);
+        }
+
+        public void SetUniform(string name, Vector4 value)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.Uniform4(location, value);
+        }
+
+        public void SetUniform(string name, Matrix4 value, bool transpose = false)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.UniformMatrix4(location, transpose, ref value);
+        }
+
+        public void SetUniform(string name, ref Matrix4 value, bool transpose = false)
+        {
+            if (uniformLocations.TryGetValue(name, out int location))
+                GL.UniformMatrix4(location, transpose, ref value);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using OpenGL_Learning.Engine.Objects;
 using OpenGL_Learning.Engine.Objects.Player;
 using OpenGL_Learning.Engine.Player;
+using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine
 {
@@ -12,10 +13,8 @@ namespace OpenGL_Learning.Engine
         // Object list
         protected List<GameObject> objects { get; set; } = new List<GameObject>();
 
-
         // Main camera of the world
         public Camera worldCamera { get; private set; } = null;
-
 
         // Current time in the game world
         public float time { get; private set; } = 0;
@@ -65,10 +64,28 @@ namespace OpenGL_Learning.Engine
 
         public void RenderWorld(float deltaTime) 
         {
+            // Separating objects into opaque and transparent
+
+            List<MeshObject> opaque = new List<MeshObject>();
+            List<(MeshObject obj, float distance)> transparent = new List<(MeshObject, float)>();
+
             foreach (GameObject obj in objects)
             {
-                if (obj is MeshObject) ((MeshObject)obj).Render(worldCamera);
+                if (!(obj is MeshObject)) continue;
+
+                MeshObject mesh = (MeshObject)obj;
+                if (mesh.IsTranparent) transparent.Add((mesh, (mesh.location - worldCamera.location).LengthSquared));
+                else opaque.Add(mesh);
             }
+
+            // Sorting transparent by distance
+            transparent.Sort( (a, b) => b.distance.CompareTo(a.distance) );
+
+            // Rendering opaque first
+            foreach (var obj in opaque) obj.Render(worldCamera);
+
+            // Transparent - second
+            foreach (var t in transparent) t.obj.Render(worldCamera);
         }
 
 

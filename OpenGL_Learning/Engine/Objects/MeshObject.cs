@@ -1,6 +1,7 @@
 ﻿using OpenGL_Learning.Engine.Objects.Player;
 using OpenGL_Learning.Engine.Rendering;
 using OpenTK.Mathematics;
+using OpenTK.Graphics.OpenGL4;
 
 
 namespace OpenGL_Learning.Engine.Objects
@@ -18,9 +19,14 @@ namespace OpenGL_Learning.Engine.Objects
         Shader shader = null;
 
         // Transformation matrices
-        protected Matrix4 locationMatrix { get; set; } = Matrix4.Identity;
-        protected Matrix4 rotationMatrix { get; set; } = Matrix4.Identity;
-        protected Matrix4 scaleMatrix { get; set; } = Matrix4.Identity;
+        protected Matrix4 locationMatrix = Matrix4.Identity;
+        protected Matrix4 rotationMatrix = Matrix4.Identity;
+        protected Matrix4 scaleMatrix = Matrix4.Identity;
+
+        // Whether the transformations have changed since the last shader update
+        bool transformationsUpdated = true;
+
+        public bool IsTranparent { get; set; }
 
         public MeshObject(Engine inEngine, string meshDataName = null, string shaderHandle = null, string[] textureHandles = null) : base(inEngine)
         {
@@ -55,14 +61,37 @@ namespace OpenGL_Learning.Engine.Objects
             Matrix4 view = camera.GetViewMatrix();
             Matrix4 projection = camera.GetProjectionMatrix();
 
-            // Binding textures
-            textures[0].UseTexture(0);
-
             // Binding shader and passing matricies to it
             shader.UseShader();
-            shader.bindMatrices(scaleMatrix * rotationMatrix * locationMatrix, view, projection);
 
+            // Binding textures
+            for (int i = 0; i < Math.Min(textures.Length, 16); i++)
+            {
+                textures[i].UseTexture(TextureUnit.Texture0 + i);
+                shader.SetUniform("texture" + i, i);
+            }
+
+            shader.SetUniform("model", scaleMatrix * rotationMatrix * locationMatrix, true);
+            shader.SetUniform("view", view, true);
+            shader.SetUniform("projection", projection, true);
+
+            // Passing other uniforms
+            BindShaderUniforms();
+
+            // Rendering mesh
             meshData.Render();
+        }
+
+        protected virtual void BindShaderUniforms()
+        {
+            if (!transformationsUpdated) return;
+
+            transformationsUpdated = false;
+
+            // Object-level uniforms
+            shader.SetUniform("object_location", location);
+            shader.SetUniform("object_rotation", ref rotationMatrix, false);
+            shader.SetUniform("object_scale", scale);
         }
 
         public override void OnDestroyed()
@@ -78,6 +107,8 @@ namespace OpenGL_Learning.Engine.Objects
             locationMatrix = Matrix4.CreateTranslation(location);
             rotationMatrix = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X)) * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-1 *rotation.Y)) * Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
             scaleMatrix = Matrix4.CreateScale(scale);
+
+            transformationsUpdated = true;
         }
     }
 }

@@ -24,8 +24,10 @@ namespace GameCode
             engine.AddMeshData("Ship_M", new MeshFromFile("D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx"));
 
             // Loading shaders
-            engine.AddShader("Default_S", new Shader(engine, shaderFolder + "shader.vert", shaderFolder + "shader.frag"));
-            engine.AddShader("Water_S", new Shader(engine, shaderFolder + "shaderWater.vert", shaderFolder + "shaderWater.frag"));
+            engine.AddShader("Default_S", new Shader(engine, shaderFolder + "Objects\\Default\\DefaultShader.vert", shaderFolder + "Objects\\Default\\DefaultShader.frag"));
+            engine.AddShader("Water_S", new Shader(engine, shaderFolder + "Objects\\Water\\WaterShader.vert", shaderFolder + "Objects\\Water\\WaterShader.frag"));
+            engine.AddShader("Default_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.vert", shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.frag"));
+            engine.AddShader("Fog_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Fog\\Fog_PPS.vert", shaderFolder + "PostProcessing\\Fog\\Fog_PPS.frag"));
 
             // Loading textures
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));
@@ -34,16 +36,24 @@ namespace GameCode
             engine.AddTexture("Shooter_T", new Texture(textureFolder + "Shooter_ColorMap.png"));
 
 
+            // Enabling post processing
+            engine.UsePostProcessing = true;
+            engine.postProcessShader = "Fog_PPS";
+
             // Creating world and objects
             World world = engine.CreateWorld("MyWorld");
 
 
-            GridObject waterGrid = new GridObject(200, 200, 2, engine, "Water_S", new string[] { "Water_T" });
+            // Water grid
+            GridObject waterGrid = new GridObject(100, 100, 2, engine, "Water_S", new string[] { "Water_T" });
             world.AddObject(waterGrid);
 
-            waterGrid.SetLocation(new Vector3(-200f, 0f, -200f));
+            waterGrid.IsTranparent = true;
+
+            waterGrid.SetLocation(new Vector3(-100f, 0f, -100f));
 
 
+            // Cube
             MeshObject cube = new MeshObject(engine, "Cube_M", "Default_S", new string[] { "Wood_T" });
             world.AddObject(cube);
 
@@ -59,6 +69,7 @@ namespace GameCode
             cube.SetScale(new Vector3(5f, 5f, 5f));
 
 
+            // Player ship
             PlayerShip ship = new PlayerShip(engine);
             world.AddObject(ship);
 

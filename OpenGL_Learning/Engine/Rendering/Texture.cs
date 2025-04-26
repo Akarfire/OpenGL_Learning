@@ -11,36 +11,48 @@ namespace OpenGL_Learning.Engine
 {
     public class Texture
     {
-        int textureHandle;
+        public int textureHandle { get; private set; }
+
+        public Texture(int width, int height, PixelInternalFormat pixelInternalFormat = PixelInternalFormat.Rgba, PixelFormat pixelFormat = PixelFormat.Rgba, PixelType pixelType = PixelType.UnsignedByte)
+        {
+            InitTexture(width, height, null, pixelInternalFormat, pixelFormat);
+        }
 
         public Texture(string inTexturePath)
         {
+            StbImage.stbi_set_flip_vertically_on_load(1);
+            ImageResult textureImage = ImageResult.FromStream(File.OpenRead(inTexturePath), ColorComponents.RedGreenBlueAlpha);
+
+            if (textureImage == null)
+            {
+                throw new Exception($"ERROR: Failed to load texture: {inTexturePath}");
+            }
+
+            InitTexture(textureImage.Width, textureImage.Height, textureImage.Data);
+        }
+
+        private void InitTexture(int width, int height, byte[] pixels = null, PixelInternalFormat pixelInternalFormat = PixelInternalFormat.Rgba, PixelFormat pixelFormat = PixelFormat.Rgba, PixelType pixelType = PixelType.UnsignedByte)
+        {
             textureHandle = GL.GenTexture();
+
             UseTexture(TextureUnit.Texture0);
 
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureMinFilter,
                 (int)TextureMinFilter.Linear);
+
             GL.TexParameter(TextureTarget.Texture2D,
                 TextureParameterName.TextureMagFilter,
                 (int)TextureMagFilter.Linear);
 
-            StbImage.stbi_set_flip_vertically_on_load(1);
-            ImageResult textureImage = ImageResult.FromStream(File.OpenRead(inTexturePath), ColorComponents.RedGreenBlueAlpha);
-
-
-            if (textureImage == null)
-            {
-                Console.WriteLine("Failed to load texture!");
-                return;
-            }
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, textureImage.Width, textureImage.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, textureImage.Data);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, width, height, 0, pixelFormat, pixelType, pixels);
+            //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }

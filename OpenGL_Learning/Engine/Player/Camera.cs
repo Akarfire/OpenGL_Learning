@@ -66,8 +66,12 @@ namespace OpenGL_Learning.Engine.Objects.Player
 
 
                 AddRotation(new Vector3(0, deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
-                //SetRotation(Quaternion.FromAxisAngle(rightVector, );
-                //AddRotation(Quaternion.FromAxisAngle(upVector, deltaX * sensitivity * deltaTime));
+
+                // Clamping pitch
+                Vector3 clampedRotation = rotation;
+                clampedRotation.Z = Math.Clamp(rotation.Z, -89, 89);
+                rotation = clampedRotation;
+
             }
         }
 

@@ -23,7 +23,6 @@ namespace OpenGL_Learning.Engine.Objects
         public Vector3 upVector { get; protected set; }
         public Vector3 rightVector { get; protected set; }
 
-
         public GameWorldObject(Engine inEngine) : base(inEngine) { OnTransformationUpdated(); }
 
         public override void OnSpawned()
