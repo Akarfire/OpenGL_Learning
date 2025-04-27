@@ -1,4 +1,4 @@
-﻿using OpenGL_Learning.Engine;
+﻿using OpenGL_Learning.Engine.Scripts;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
 using OpenTK.Mathematics;
 

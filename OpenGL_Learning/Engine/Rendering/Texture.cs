@@ -9,16 +9,22 @@ using StbImageSharp;
 
 namespace OpenGL_Learning.Engine
 {
+    // Texture type enumeration
+    public enum TextureType { ColorMap, DepthMap }
+    
+    // Texture class
     public class Texture
     {
         public int textureHandle { get; private set; }
+        public TextureType textureType { get; private set; } = TextureType.ColorMap;
 
-        public Texture(int width, int height, PixelInternalFormat pixelInternalFormat = PixelInternalFormat.Rgba, PixelFormat pixelFormat = PixelFormat.Rgba, PixelType pixelType = PixelType.UnsignedByte)
+        public Texture(int width, int height, TextureType type = TextureType.ColorMap)
         {
-            InitTexture(width, height, null, pixelInternalFormat, pixelFormat);
+            textureType = type;
+            InitTexture(width, height, null);
         }
 
-        public Texture(string inTexturePath)
+        public Texture(string inTexturePath, TextureType type = TextureType.ColorMap)
         {
             StbImage.stbi_set_flip_vertically_on_load(1);
             ImageResult textureImage = ImageResult.FromStream(File.OpenRead(inTexturePath), ColorComponents.RedGreenBlueAlpha);
@@ -28,31 +34,57 @@ namespace OpenGL_Learning.Engine
                 throw new Exception($"ERROR: Failed to load texture: {inTexturePath}");
             }
 
+            textureType = type;
+
             InitTexture(textureImage.Width, textureImage.Height, textureImage.Data);
         }
 
-        private void InitTexture(int width, int height, byte[] pixels = null, PixelInternalFormat pixelInternalFormat = PixelInternalFormat.Rgba, PixelFormat pixelFormat = PixelFormat.Rgba, PixelType pixelType = PixelType.UnsignedByte)
+        private void InitTexture(int width, int height, byte[] pixels = null)
         {
             textureHandle = GL.GenTexture();
 
             UseTexture(TextureUnit.Texture0);
 
-            GL.TexParameter(TextureTarget.Texture2D,
-                TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            // Color map case
+            if (textureType == TextureType.ColorMap)
+            {
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
 
-            GL.TexParameter(TextureTarget.Texture2D,
-                TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
 
-            GL.TexParameter(TextureTarget.Texture2D,
-                TextureParameterName.TextureMinFilter,
-                (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMinFilter,
+                    (int)TextureMinFilter.Linear);
 
-            GL.TexParameter(TextureTarget.Texture2D,
-                TextureParameterName.TextureMagFilter,
-                (int)TextureMagFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMagFilter,
+                    (int)TextureMagFilter.Linear);
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, width, height, 0, pixelFormat, pixelType, pixels);
-            //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            }
+
+            // Depth texture case
+            else if (textureType == TextureType.DepthMap) 
+            {
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMinFilter,
+                    (int)TextureMinFilter.Nearest);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMagFilter,
+                    (int)TextureMagFilter.Nearest);
+
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, width, height, 0, PixelFormat.DepthComponent, PixelType.Float, pixels);
+            }
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
         }

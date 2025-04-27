@@ -13,7 +13,7 @@ namespace OpenGL_Learning.Engine.Objects
         protected MeshData meshData = null;
 
         // Textures
-        Texture[] textures = null;
+        Texture[] textures = new Texture[0];
 
         // Shader
         Shader shader = null;

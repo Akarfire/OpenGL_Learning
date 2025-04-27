@@ -21,6 +21,7 @@ namespace OpenGL_Learning.Engine.Objects.Player
         public Vector2 lastMousePosition;
 
         bool enableMouseInput = true;
+        public bool enableInput = true;
 
 
         // -----
@@ -42,6 +43,7 @@ namespace OpenGL_Learning.Engine.Objects.Player
 
         public void InputController(float deltaTime, KeyboardState keyboardInput, MouseState mouseInput)
         {
+            if (!enableInput) return;
 
             if (keyboardInput.IsKeyDown(Keys.W)) { AddLocation(forwardVector * speed * deltaTime); }
             if (keyboardInput.IsKeyDown(Keys.S)) { AddLocation(-1 * forwardVector * speed * deltaTime); }

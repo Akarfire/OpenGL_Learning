@@ -19,6 +19,6 @@ void main()
 	vec3 lightDir = light_direction;
 	vec3 worldNormal = normalize( mat3(object_rotation) * normal);
 	
-	FragColor = texture(texture0, texCoord); //* clamp( dot(worldNormal, lightDir) + ambient_light, 0, 1 );
+	FragColor = texture(texture0, texCoord) * clamp( dot(worldNormal, lightDir) + ambient_light, 0, 1 );
 	FragColor.a = 1;
 } 

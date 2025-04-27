@@ -1,4 +1,5 @@
 ﻿using OpenGL_Learning.Engine;
+using OpenGL_Learning.Engine.Scripts;
 using OpenGL_Learning.Engine.Scripts.EngineScripts;
 using OpenGL_Learning.Engine.Player;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -13,9 +14,10 @@ namespace GameCode
         // Scripts
         PhysicsScript physicsScript = null;
         WaterBouancyScript bouancyScript = null;
+        FollowCamera followCameraScript = null;
 
         // Parameters
-        public float speed = 0.25f;
+        public float speed = 0.5f;
         public float force = 0.01f;
         public float rotationSpeed = 40f;
 
@@ -42,15 +44,22 @@ namespace GameCode
             AddScript("Bouancy", bouancyScript);
             bouancyScript.AttachScript(this);
 
+
+            followCameraScript = new FollowCamera();
+            AddScript("followCamera", followCameraScript);
+
+
             SetScale(new Vector3(2, 2, 2));
         }
 
         public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState)
         {
-            if (keyboardState.IsKeyDown(Keys.Up)) physicsScript.AddForce(forwardVector * speed * force * deltaTime);
-            if (keyboardState.IsKeyDown(Keys.Down)) physicsScript.AddForce(-1 * forwardVector * speed * force * deltaTime);
-            if (keyboardState.IsKeyDown(Keys.Right)) AddRotation(Vector3.UnitY * rotationSpeed * deltaTime);
-            if (keyboardState.IsKeyDown(Keys.Left)) AddRotation(-1 * Vector3.UnitY * rotationSpeed * deltaTime);
+            if (keyboardState.IsKeyDown(Keys.W)) physicsScript.AddForce(forwardVector * speed * force * deltaTime);
+            if (keyboardState.IsKeyDown(Keys.S)) physicsScript.AddForce(-1 * forwardVector * speed * force * deltaTime);
+            if (keyboardState.IsKeyDown(Keys.D)) AddRotation(Vector3.UnitY * rotationSpeed * deltaTime);
+            if (keyboardState.IsKeyDown(Keys.A)) AddRotation(-1 * Vector3.UnitY * rotationSpeed * deltaTime);
+
+            followCameraScript.MouseInput(deltaTime, mouseState);
         }
     }
 }

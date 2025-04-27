@@ -21,6 +21,7 @@ namespace GameCode
         {
             // Loading meshes
             engine.AddMeshData("Cube_M", new CubeMesh());
+            engine.AddMeshData("Sphere_M", new SphereMesh());
             engine.AddMeshData("Ship_M", new MeshFromFile("D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx"));
 
             // Loading shaders
@@ -28,6 +29,7 @@ namespace GameCode
             engine.AddShader("Water_S", new Shader(engine, shaderFolder + "Objects\\Water\\WaterShader.vert", shaderFolder + "Objects\\Water\\WaterShader.frag"));
             engine.AddShader("Default_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.vert", shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.frag"));
             engine.AddShader("Fog_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Fog\\Fog_PPS.vert", shaderFolder + "PostProcessing\\Fog\\Fog_PPS.frag"));
+            engine.AddShader("Sky_S", new Shader(engine, shaderFolder + "Objects\\Sky\\SkyShader.vert", shaderFolder + "Objects\\Sky\\SkyShader.frag"));
 
             // Loading textures
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));
@@ -42,6 +44,20 @@ namespace GameCode
 
             // Creating world and objects
             World world = engine.CreateWorld("MyWorld");
+            world.lightDirection = new Vector3(1, 0.35f, 1).Normalized();
+
+            // Sky sphere
+            MeshObject skySphere = new MeshObject(engine, "Sphere_M", "Sky_S", null);
+            skySphere.SetScale(new Vector3(500));
+
+            AttachmentScript skyAttachment = new AttachmentScript();
+            skySphere.AddScript("CameraAttachment", skyAttachment);
+            skyAttachment.attachementParent = world.worldCamera;
+
+            SunRotation sunRotation = new SunRotation();
+            skySphere.AddScript("SunRotation", sunRotation);
+
+            world.AddObject(skySphere);
 
 
             // Water grid
@@ -76,7 +92,10 @@ namespace GameCode
             ship.SetLocation(new Vector3(5, 1, 5));
 
 
+            // Camera settings
             world.worldCamera.AddLocation(new Vector3(0, 10, 0));
+            world.worldCamera.maxViewDistance = 400f;
+            //world.worldCamera.speed = 60f;
 
             // Starting the engine
             engine.StartEngine();

@@ -22,7 +22,7 @@ namespace OpenGL_Learning.Engine
 
 
         // Window settings
-        public int windowWidth { get; private set; } = 1920;
+        public int windowWidth { get; private set; } = 2160;
         public int windowHeight { get; private set; } = 1080;
 
         public bool cursorGrabbed { get; private set; } = false;
@@ -71,7 +71,7 @@ namespace OpenGL_Learning.Engine
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, sceneColorTexture.textureHandle, 0);
 
             // Binding scene depth texture to framebuffer
-            sceneDepthTexture = new Texture(windowWidth, windowHeight, PixelInternalFormat.DepthComponent24, PixelFormat.DepthComponent, PixelType.Float);
+            sceneDepthTexture = new Texture(windowWidth, windowHeight, TextureType.DepthMap);
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, sceneDepthTexture.textureHandle, 0);
 
             // Modifying depth texture parameters
@@ -89,6 +89,7 @@ namespace OpenGL_Learning.Engine
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
+
             // Registering textures
             AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
             AddTexture("ENGINE_SceneDepth_T", sceneDepthTexture);
@@ -99,6 +100,7 @@ namespace OpenGL_Learning.Engine
             //"ENGINE_SceneColor_T", "ENGINE_SceneDepth_T"
             renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
             
+
             // Running the window
             gameWindow.Run();
             
@@ -171,7 +173,7 @@ namespace OpenGL_Learning.Engine
 
                 shader.SetUniform("time", currentWorld.time);
 
-                shader.SetUniform("light_direction", new Vector3(1, 1, 1).Normalized());
+                shader.SetUniform("light_direction", currentWorld.lightDirection);
                 shader.SetUniform("ambient_light", 0.5f);
 
                 shader.SetUniform("camera_location", currentWorld.worldCamera.location);

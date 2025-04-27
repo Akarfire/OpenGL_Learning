@@ -20,6 +20,10 @@ namespace OpenGL_Learning.Engine
         public float time { get; private set; } = 0;
 
 
+        // Lighting
+        public Vector3 lightDirection = new Vector3(1, 1, 1).Normalized();
+
+
         // -------
 
 

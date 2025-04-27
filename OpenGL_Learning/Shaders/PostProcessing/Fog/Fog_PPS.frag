@@ -4,6 +4,7 @@
 uniform sampler2D texture0; // Scene color
 uniform sampler2D texture1; // Scene depth
 uniform float time;
+uniform vec3 camera_vector;
 
 // Inputs
 in vec2 texCoord;
@@ -31,8 +32,8 @@ void main()
     float depth = LinearizeDepth(texture(texture1, texCoord).r, zNear, zFar) / zScale;
 
     // Fog color
-    vec4 fogColor = vec4(0.0, 0.6, 1.0, 1.0);
+    vec4 fogColor = vec4(0.47, 0.79, 1.0, 1.0);
 
     // Output
-    FragColor = mix(sceneColor, fogColor, clamp(depth, 0, 1));
-} 
+    FragColor = mix(sceneColor, fogColor, clamp(depth, 0.0, 1.0) * 0.8);
+}
