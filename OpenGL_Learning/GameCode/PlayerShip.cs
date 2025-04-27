@@ -33,7 +33,7 @@ namespace GameCode
             physicsScript.enableGravityForce = true;
             physicsScript.enableDragForce = true;
             physicsScript.dragForceStrenght = 0.6f;
-            physicsScript.objectMass = 1f;
+            physicsScript.objectMass = 2f;
 
             AddScript("Physics", physicsScript);
             physicsScript.AttachScript(this);
