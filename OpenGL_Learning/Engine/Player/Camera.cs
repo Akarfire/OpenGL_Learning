@@ -22,7 +22,7 @@ namespace OpenGL_Learning.Engine.Objects.Player
 
         bool enableMouseInput = true;
         public bool enableInput = true;
-
+        public bool forceFreeCam = false;
 
         // -----
 
@@ -43,7 +43,15 @@ namespace OpenGL_Learning.Engine.Objects.Player
 
         public void InputController(float deltaTime, KeyboardState keyboardInput, MouseState mouseInput)
         {
-            if (!enableInput) return;
+            Console.Clear();
+            Console.WriteLine(forwardVector);
+
+            // Force free cam trigger
+            if (keyboardInput.IsKeyDown(Keys.F5)) forceFreeCam = true;
+            else if (keyboardInput.IsKeyDown(Keys.F6)) forceFreeCam = false;
+
+            // Main input
+            if (!enableInput && !forceFreeCam) return;
 
             if (keyboardInput.IsKeyDown(Keys.W)) { AddLocation(forwardVector * speed * deltaTime); }
             if (keyboardInput.IsKeyDown(Keys.S)) { AddLocation(-1 * forwardVector * speed * deltaTime); }
@@ -52,13 +60,14 @@ namespace OpenGL_Learning.Engine.Objects.Player
             if (keyboardInput.IsKeyDown(Keys.Q)) { AddLocation(-1 * upVector * speed * deltaTime); }
             if (keyboardInput.IsKeyDown(Keys.E)) { AddLocation(upVector * speed * deltaTime); }
 
+            
             if (firstMove)
             {
                 lastMousePosition = new Vector2(mouseInput.X, mouseInput.Y);
                 firstMove = false;
             }
 
-            else if (enableMouseInput)
+            else if (enableMouseInput || forceFreeCam)
             {
                 var deltaX = mouseInput.X - lastMousePosition.X;
                 var deltaY = mouseInput.Y - lastMousePosition.Y;

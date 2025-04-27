@@ -17,7 +17,7 @@ namespace GameCode
         FollowCamera followCameraScript = null;
 
         // Parameters
-        public float speed = 0.5f;
+        public float speed = 5f;
         public float force = 0.01f;
         public float rotationSpeed = 40f;
 
@@ -32,8 +32,8 @@ namespace GameCode
 
             physicsScript.enableGravityForce = true;
             physicsScript.enableDragForce = true;
-            physicsScript.dragForceStrenght = 0.8f;
-            physicsScript.objectMass = 0.25f;
+            physicsScript.dragForceStrenght = 0.6f;
+            physicsScript.objectMass = 1f;
 
             AddScript("Physics", physicsScript);
             physicsScript.AttachScript(this);
@@ -43,6 +43,7 @@ namespace GameCode
 
             AddScript("Bouancy", bouancyScript);
             bouancyScript.AttachScript(this);
+            bouancyScript.originOffset = Vector3.UnitY * 0.65f;
 
 
             followCameraScript = new FollowCamera();

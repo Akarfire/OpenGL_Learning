@@ -40,7 +40,7 @@ namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
                 new Triangle(6, 7, 3)
             };
 
-            enableTriangleNormals = true;
+            normalCalculationParams.enableTriangleNormals = true;
 
             InitMeshData();
         }

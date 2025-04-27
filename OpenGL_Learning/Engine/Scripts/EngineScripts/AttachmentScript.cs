@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OpenTK.Mathematics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +12,10 @@ namespace OpenGL_Learning.Engine.Scripts.EngineScripts
     {
         GameWorldObject ownerGW = null;
         public GameWorldObject attachementParent = null;
+
+        // Parameters
+        public Vector3 attachmentPositionMask = Vector3.One;
+        public Vector3 attachmentPositionOffset = Vector3.Zero;
 
         // ----
 
@@ -29,7 +34,14 @@ namespace OpenGL_Learning.Engine.Scripts.EngineScripts
 
             if (ownerGW != null && attachementParent != null) 
             {
-                ownerGW.SetLocation(attachementParent.location);
+                Vector3 targetLocation = attachementParent.location + attachmentPositionOffset;
+
+                Vector3 newLocation = new Vector3(
+                    MathHelper.Lerp(ownerGW.location.X, targetLocation.X, attachmentPositionMask.X),
+                    MathHelper.Lerp(ownerGW.location.Y, targetLocation.Y, attachmentPositionMask.Y),
+                    MathHelper.Lerp(ownerGW.location.Z, targetLocation.Z, attachmentPositionMask.Z));
+
+                ownerGW.SetLocation(newLocation);
             }
         }
     }

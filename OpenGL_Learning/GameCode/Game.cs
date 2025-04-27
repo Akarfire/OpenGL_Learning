@@ -30,10 +30,11 @@ namespace GameCode
             engine.AddShader("Default_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.vert", shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.frag"));
             engine.AddShader("Fog_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Fog\\Fog_PPS.vert", shaderFolder + "PostProcessing\\Fog\\Fog_PPS.frag"));
             engine.AddShader("Sky_S", new Shader(engine, shaderFolder + "Objects\\Sky\\SkyShader.vert", shaderFolder + "Objects\\Sky\\SkyShader.frag"));
+            engine.AddShader("Terrain_S", new Shader(engine, shaderFolder + "Objects\\Terrain\\TerrainShader.vert", shaderFolder + "Objects\\Terrain\\TerrainShader.frag"));
 
             // Loading textures
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));
-            engine.AddTexture("Water_T", new Texture(textureFolder + "sea-water-512x512.png"));
+            engine.AddTexture("Water_T", new Texture(textureFolder + "WaterStyleTex.jpg"));
             engine.AddTexture("a_T", new Texture(textureFolder + "a.png"));
             engine.AddTexture("Shooter_T", new Texture(textureFolder + "Shooter_ColorMap.png"));
 
@@ -61,28 +62,23 @@ namespace GameCode
 
 
             // Water grid
-            GridObject waterGrid = new GridObject(100, 100, 2, engine, "Water_S", new string[] { "Water_T" });
+            GridObject waterGrid = new GridObject(800, 800, 1, engine, "Water_S", new string[] { "Water_T" });
             world.AddObject(waterGrid);
 
             waterGrid.IsTranparent = true;
 
-            waterGrid.SetLocation(new Vector3(-100f, 0f, -100f));
+            AttachmentScript waterAttachment = new AttachmentScript();
+            waterGrid.AddScript("CameraAttachment", waterAttachment);
+            waterAttachment.attachementParent = world.worldCamera;
+            waterAttachment.attachmentPositionMask = new Vector3(1, 0, 1);
+            waterAttachment.attachmentPositionOffset = new Vector3(-400f, 0f, -400f);
 
 
-            // Cube
-            MeshObject cube = new MeshObject(engine, "Cube_M", "Default_S", new string[] { "Wood_T" });
-            world.AddObject(cube);
+            // Terrain
+            ProceduralTerrainObject terrain = new ProceduralTerrainObject(800, 800, 1, 9, 125, engine, "Terrain_S", new string[] { "Wood_T" });
+            world.AddObject(terrain);
 
-            PhysicsScript cubePhysics = new PhysicsScript();
-            cubePhysics.enableGravityForce = true;
-            cubePhysics.dragForceStrenght = 0.5f;
-            cube.AddScript("Physics", cubePhysics);
-
-            WaterBouancyScript cubeBouancy = new WaterBouancyScript();
-            cube.AddScript("Bouancy", cubeBouancy);
-
-            cube.SetLocation(new Vector3(0, 1, 0));
-            cube.SetScale(new Vector3(5f, 5f, 5f));
+            terrain.SetLocation(new Vector3(-400f, -40f, -400f));
 
 
             // Player ship
@@ -95,7 +91,7 @@ namespace GameCode
             // Camera settings
             world.worldCamera.AddLocation(new Vector3(0, 10, 0));
             world.worldCamera.maxViewDistance = 400f;
-            //world.worldCamera.speed = 60f;
+            world.worldCamera.speed = 60f;
 
             // Starting the engine
             engine.StartEngine();

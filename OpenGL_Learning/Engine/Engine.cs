@@ -176,8 +176,17 @@ namespace OpenGL_Learning.Engine
                 shader.SetUniform("light_direction", currentWorld.lightDirection);
                 shader.SetUniform("ambient_light", 0.5f);
 
+                shader.SetUniform("screen_width", (float)windowWidth);
+                shader.SetUniform("screen_height", (float)windowHeight);
+
                 shader.SetUniform("camera_location", currentWorld.worldCamera.location);
                 shader.SetUniform("camera_vector", currentWorld.worldCamera.forwardVector);
+
+                shader.SetUniform("view", currentWorld.worldCamera.GetViewMatrix(), true);
+                shader.SetUniform("projection", currentWorld.worldCamera.GetProjectionMatrix(), true);
+
+                shader.SetUniform("view_inverse", currentWorld.worldCamera.GetViewMatrix().Inverted(), true);
+                shader.SetUniform("projection_inverse", currentWorld.worldCamera.GetProjectionMatrix().Inverted(), true);
 
                 shader.StopUsingShader();
             }

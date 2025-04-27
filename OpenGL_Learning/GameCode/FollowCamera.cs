@@ -15,7 +15,7 @@ namespace GameCode
         protected bool firstMove = true;
 
         // Parameters
-        public float speed = 2f;
+        public float speed = 3f;
         public float distance = 15.0f;
 
         protected float yaw = 0.0f;
@@ -39,6 +39,10 @@ namespace GameCode
             if (ownerGW != null)
             {
                 Camera camera = owner.engine.currentWorld.worldCamera;
+
+                // Do nothing if freeCam is forced
+                if (camera.forceFreeCam) return;
+
                 camera.enableInput = false;
 
                 Vector3 targetLocation = ownerGW.location + Matrix3.CreateRotationY(MathHelper.DegreesToRadians(yaw)) * Matrix3.CreateRotationZ(MathHelper.DegreesToRadians(pitch)) * Vector3.UnitX * -1 * distance;

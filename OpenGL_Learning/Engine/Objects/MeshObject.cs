@@ -57,9 +57,6 @@ namespace OpenGL_Learning.Engine.Objects
 
         public void Render(Camera camera)
         {
-            // Receiving matricies from the camera
-            Matrix4 view = camera.GetViewMatrix();
-            Matrix4 projection = camera.GetProjectionMatrix();
 
             // Binding shader and passing matricies to it
             shader.UseShader();
@@ -72,8 +69,6 @@ namespace OpenGL_Learning.Engine.Objects
             }
 
             shader.SetUniform("model", scaleMatrix * rotationMatrix * locationMatrix, true);
-            shader.SetUniform("view", view, true);
-            shader.SetUniform("projection", projection, true);
 
             // Passing other uniforms
             BindShaderUniforms();
