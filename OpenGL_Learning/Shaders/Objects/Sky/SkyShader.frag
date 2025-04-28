@@ -29,9 +29,12 @@ void main()
 
     // Sun mask and color
     float sunMask = pow(clamp(dot(light_direction, worldNormal), 0.0, 1.0), 100);
+    sunMask = pow(sunMask, 0.2);
 
     vec4 sunColorCrown = vec4(1.0, 0.7, 0.0, 1.0);
-    vec4 sunColor = mix(sunColorCrown, vec4(1), pow(sunMask, 0.2));
+
+    vec4 sunColor = mix(sunColorCrown, vec4(1), 
+    mix ( sunMask, 1, float(sunMask > 0.9) ));
 
     FragColor = mix(skyWithWaterColor, sunColor, sunMask);
 } 

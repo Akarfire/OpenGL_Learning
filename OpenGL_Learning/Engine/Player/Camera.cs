@@ -43,11 +43,8 @@ namespace OpenGL_Learning.Engine.Objects.Player
 
         public void InputController(float deltaTime, KeyboardState keyboardInput, MouseState mouseInput)
         {
-            Console.Clear();
-            Console.WriteLine(forwardVector);
-
             // Force free cam trigger
-            if (keyboardInput.IsKeyDown(Keys.F5)) forceFreeCam = true;
+            if (keyboardInput.IsKeyDown(Keys.F5)) { forceFreeCam = true; firstMove = true; }
             else if (keyboardInput.IsKeyDown(Keys.F6)) forceFreeCam = false;
 
             // Main input

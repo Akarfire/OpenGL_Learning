@@ -37,7 +37,7 @@ void main()
 	vec3 worldPos = aPosition + object_location;
 	float cameraDistanceSqr = dot(worldPos - camera_location, worldPos - camera_location);
 
-	float distanceFactor = 0.5 * cameraDistanceSqr / 5000;
+	float distanceFactor = cameraDistanceSqr / 3000;
 
 	// sin((worldPos.x) / 4 + time * 0.5)
 	vec3 newPos = aPosition + 1 * vec3(0, GetWaterHeight(worldPos, time * 0.5) * mix((1 - clamp(pow(distanceFactor, 2), 0, 1)), 1.0, 0.5), 0) - vec3(0, distanceFactor, 0);

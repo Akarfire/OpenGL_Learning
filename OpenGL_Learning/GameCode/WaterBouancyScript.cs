@@ -42,7 +42,7 @@ namespace GameCode
                 if (origin.Y < surfaceLevel)
                 {
                     physicsScript.AddForce(
-                        forceMultiplier * -1 * physicsScript.gravityDirection * physicsScript.gravityAcceleration * deltaTime * physicsScript.objectMass
+                        forceMultiplier * -1 * physicsScript.gravityDirection * physicsScript.gravityAcceleration * deltaTime
                         * 2 * (float)Math.Clamp((origin.Y - surfaceLevel) * (origin.Y - surfaceLevel), 0f, 1)
 
                         + (Vector3.UnitX + Vector3.UnitY).Normalized() * -0.000000025f
@@ -69,11 +69,15 @@ namespace GameCode
                     pitch = MathHelper.RadiansToDegrees(pitch);
                     roll = MathHelper.RadiansToDegrees(roll);
 
+                    float depthFactor = Math.Clamp((surfaceLevel - origin.Y) / 25, 0, 1);
+
+                    float interpSpeed = 10 * (1 - depthFactor);
+
                     Vector3 currentRotation = physicsScript.ownerWO.rotation;
                     Vector3 newRotation = new Vector3(
-                        (roll - currentRotation.X) * 10 * deltaTime, 
+                        (roll - currentRotation.X) * interpSpeed * deltaTime, 
                         0, 
-                        (pitch - currentRotation.Z) * 10 * deltaTime);
+                        (pitch - currentRotation.Z) * interpSpeed * deltaTime);
                     physicsScript.ownerWO.AddRotation(newRotation);
                 }
             }

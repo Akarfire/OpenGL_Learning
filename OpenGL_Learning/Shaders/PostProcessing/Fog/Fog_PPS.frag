@@ -47,7 +47,7 @@ float LinearizeDepth(float depth, float near, float far)
 
 
 //Calculates exponential Height Fog color
-vec4 ExponentialHeightFog(vec4 inColor)
+vec4 Fog(vec4 inColor)
 {
     // Distant fog settings
     float zNear = 0.01;   // Near distance
@@ -60,6 +60,7 @@ vec4 ExponentialHeightFog(vec4 inColor)
 
     // Fog color
     vec4 fogColor = vec4(0.4, 0.7, 1.0, 1.0); 
+    float fogDensity = 0.3;
 
     // Depth liniarization
     float rawDepth = texture(texture1, texCoord).r;
@@ -75,7 +76,7 @@ vec4 ExponentialHeightFog(vec4 inColor)
     //float heightFog = clamp((height - fogStartHeight) / (fogEndHeight - fogStartHeight), 0.0, 1.0);
 
     // Resulting color
-    vec4 color = mix(inColor, fogColor, distantFog * 0.6 );
+    vec4 color = mix(inColor, fogColor, distantFog * fogDensity );
 
     //return vec4(normalize(worldPos), 1) * color.b;
     return color;
@@ -114,7 +115,7 @@ void main()
     vec4 sceneColor = texture(texture0, texCoord);
 
     // Output
-    FragColor = UnderWaterEffect(ExponentialHeightFog(sceneColor));
+    FragColor = UnderWaterEffect(Fog(sceneColor));
 }
 
 

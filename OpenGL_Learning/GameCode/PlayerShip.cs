@@ -44,6 +44,7 @@ namespace GameCode
             AddScript("Bouancy", bouancyScript);
             bouancyScript.AttachScript(this);
             bouancyScript.originOffset = Vector3.UnitY * 0.65f;
+            bouancyScript.forceMultiplier = 2f;
 
 
             followCameraScript = new FollowCamera();
@@ -59,6 +60,11 @@ namespace GameCode
             if (keyboardState.IsKeyDown(Keys.S)) physicsScript.AddForce(-1 * forwardVector * speed * force * deltaTime);
             if (keyboardState.IsKeyDown(Keys.D)) AddRotation(Vector3.UnitY * rotationSpeed * deltaTime);
             if (keyboardState.IsKeyDown(Keys.A)) AddRotation(-1 * Vector3.UnitY * rotationSpeed * deltaTime);
+
+            if (keyboardState.IsKeyDown(Keys.LeftShift)) physicsScript.objectMass -= 1f * deltaTime;
+            if (keyboardState.IsKeyDown(Keys.LeftControl)) physicsScript.objectMass += 1f * deltaTime;
+
+            physicsScript.objectMass = Math.Clamp(physicsScript.objectMass, 2f, 8f);
 
             followCameraScript.MouseInput(deltaTime, mouseState);
         }
