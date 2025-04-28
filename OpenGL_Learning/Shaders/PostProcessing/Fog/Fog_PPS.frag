@@ -24,26 +24,26 @@ float LinearizeDepth(float depth, float near, float far)
     return (2.0 * near * far) / (far + near - z * (far - near));
 }
 
-// //Reconstructs world position from fragment position and depth
-// vec3 GetWorldPosition(float depth)
-// {
-//     // Convert fragment coordinates to normalized device coordinates (NDC)
-//     vec4 ndc = vec4(
-//         texCoord.x * 2.0 - 1.0,
-//         texCoord.y * 2.0 - 1.0,
-//         depth * 2.0 - 1.0,
-//         1.0
-//     );
+//Reconstructs world position from fragment position and depth
+vec3 GetWorldPosition(float depth)
+{
+    // Convert fragment coordinates to normalized device coordinates (NDC)
+    vec4 ndc = vec4(
+        texCoord.x * 2.0 - 1.0,
+        texCoord.y * 2.0 - 1.0,
+        depth * 2.0 - 1.0,
+        1.0
+    );
 
-//     // Transform NDC to view space
-//     vec4 viewPos = projection_inverse * ndc;
-//     viewPos /= viewPos.w;  // Perspective division
+    // Transform NDC to view space
+    vec4 viewPos = projection_inverse * ndc;
+    viewPos /= viewPos.w;  // Perspective division
 
-//     // Transform view space to world space
-//     vec4 worldPos = view_inverse * viewPos;
+    // Transform view space to world space
+    vec4 worldPos = view_inverse * viewPos;
     
-//     return worldPos.xyz;
-// }
+    return worldPos.xyz;
+}
 
 
 //Calculates exponential Height Fog color
@@ -95,7 +95,7 @@ float GetWaterHeight(vec3 worldPos, float time)
 vec4 UnderWaterEffect(vec4 sceneColor)
 {
     vec4 underWaterColor = vec4(0.15, 0.49, 0.91, 1.0);
-    float underWaterColorEffect = 0.6;
+    float underWaterColorEffect = 0.2;
 
     float waterLevel = GetWaterHeight(camera_location, time * 0.5);
     

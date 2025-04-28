@@ -13,6 +13,8 @@ namespace GameCode
         public float forceMultiplier = 1.0f;
         public Vector3 originOffset = Vector3.Zero;
 
+        public bool inWater = false;
+
         // ------
 
         public WaterBouancyScript(string ownerPhysicsScriptName = "Physics") { this.ownerPhysicsScriptName = ownerPhysicsScriptName; }
@@ -39,7 +41,8 @@ namespace GameCode
                 //float surfaceLevel = (float)Math.Sin(physicsScript.ownerWO.location.X / 4 + owner.engine.currentWorld.time * 0.5);
                 float surfaceLevel = GetWaterHeight(origin, time);
 
-                if (origin.Y < surfaceLevel)
+                inWater = origin.Y < surfaceLevel;
+                if (inWater)
                 {
                     physicsScript.AddForce(
                         forceMultiplier * -1 * physicsScript.gravityDirection * physicsScript.gravityAcceleration * deltaTime

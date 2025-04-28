@@ -16,13 +16,14 @@ namespace GameCode
         // Folder paths
         public string shaderFolder = "../../../Shaders/";
         public string textureFolder = "../../../Textures/";
+        public string modelsFolder = "../../../Models/";
 
         public Game()
         {
             // Loading meshes
             engine.AddMeshData("Cube_M", new CubeMesh());
             engine.AddMeshData("Sphere_M", new SphereMesh());
-            engine.AddMeshData("Ship_M", new MeshFromFile("D:\\3D_Models\\Exported\\Zaris\\Zaris_Shooter.fbx"));
+            engine.AddMeshData("Ship_M", new MeshFromFile(modelsFolder + "Zaris_Shooter.fbx"));
 
             // Loading shaders
             engine.AddShader("Default_S", new Shader(engine, shaderFolder + "Objects\\Default\\DefaultShader.vert", shaderFolder + "Objects\\Default\\DefaultShader.frag"));
