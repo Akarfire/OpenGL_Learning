@@ -10,7 +10,7 @@ using StbImageSharp;
 namespace OpenGL_Learning.Engine
 {
     // Texture type enumeration
-    public enum TextureType { ColorMap, DepthMap }
+    public enum TextureType { ColorMap, DepthMap, ComputeShaderOutput }
     
     // Texture class
     public class Texture
@@ -84,6 +84,26 @@ namespace OpenGL_Learning.Engine
                     (int)TextureMagFilter.Nearest);
 
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, width, height, 0, PixelFormat.DepthComponent, PixelType.Float, pixels);
+            }
+
+            // Compute shader output, uses rgb32f for higher precission
+            else if (textureType == TextureType.ComputeShaderOutput)
+            {
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMinFilter,
+                    (int)TextureMinFilter.Nearest);
+
+                GL.TexParameter(TextureTarget.Texture2D,
+                    TextureParameterName.TextureMagFilter,
+                    (int)TextureMagFilter.Nearest);
+
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, width, height, 0, PixelFormat.Rgba, PixelType.Float, pixels);
             }
 
             GL.BindTexture(TextureTarget.Texture2D, 0);

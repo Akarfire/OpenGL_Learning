@@ -26,12 +26,12 @@ namespace GameCode
             engine.AddMeshData("Ship_M", new MeshFromFile(modelsFolder + "Zaris_Shooter.fbx"));
 
             // Loading shaders
-            engine.AddShader("Default_S", new Shader(engine, shaderFolder + "Objects\\Default\\DefaultShader.vert", shaderFolder + "Objects\\Default\\DefaultShader.frag"));
-            engine.AddShader("Water_S", new Shader(engine, shaderFolder + "Objects\\Water\\WaterShader.vert", shaderFolder + "Objects\\Water\\WaterShader.frag"));
-            engine.AddShader("Default_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.vert", shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.frag"));
-            engine.AddShader("Fog_PPS", new Shader(engine, shaderFolder + "PostProcessing\\Fog\\Fog_PPS.vert", shaderFolder + "PostProcessing\\Fog\\Fog_PPS.frag"));
-            engine.AddShader("Sky_S", new Shader(engine, shaderFolder + "Objects\\Sky\\SkyShader.vert", shaderFolder + "Objects\\Sky\\SkyShader.frag"));
-            engine.AddShader("Terrain_S", new Shader(engine, shaderFolder + "Objects\\Terrain\\TerrainShader.vert", shaderFolder + "Objects\\Terrain\\TerrainShader.frag"));
+            engine.AddShader("Default_S", new RenderShader(engine, shaderFolder + "Objects\\Default\\DefaultShader.vert", shaderFolder + "Objects\\Default\\DefaultShader.frag"));
+            engine.AddShader("Water_S", new RenderShader(engine, shaderFolder + "Objects\\Water\\WaterShader.vert", shaderFolder + "Objects\\Water\\WaterShader.frag"));
+            engine.AddShader("Default_PPS", new RenderShader(engine, shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.vert", shaderFolder + "PostProcessing\\Default\\DefaultPostProcessingShader.frag"));
+            engine.AddShader("Fog_PPS", new RenderShader(engine, shaderFolder + "PostProcessing\\Fog\\Fog_PPS.vert", shaderFolder + "PostProcessing\\Fog\\Fog_PPS.frag"));
+            engine.AddShader("Sky_S", new RenderShader(engine, shaderFolder + "Objects\\Sky\\SkyShader.vert", shaderFolder + "Objects\\Sky\\SkyShader.frag"));
+            engine.AddShader("Terrain_S", new RenderShader(engine, shaderFolder + "Objects\\Terrain\\TerrainShader.vert", shaderFolder + "Objects\\Terrain\\TerrainShader.frag"));
 
             // Loading textures
             engine.AddTexture("Wood_T", new Texture(textureFolder + "wood.jpg"));

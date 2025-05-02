@@ -4,9 +4,10 @@ using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine
 {
+
     public class Shader
     {
-        Engine engine;
+        public Engine engine { get; private set; }
 
         public int shaderHandle { get; private set; }
 
@@ -14,37 +15,24 @@ namespace OpenGL_Learning.Engine
         protected Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
 
 
-        public Shader(Engine inEngine, string vertexShaderFile, string fragmentShaderFile)
+        public Shader(Engine inEngine)
         {
             engine = inEngine;
             shaderHandle = GL.CreateProgram();
+        }
 
-            int vertexShader = CompileShader(ShaderType.VertexShader, vertexShaderFile);
-            int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentShaderFile);
 
-            // Binding and linking the program
-
-            GL.AttachShader(shaderHandle, vertexShader);
-            GL.AttachShader(shaderHandle, fragmentShader);
-
-            GL.LinkProgram(shaderHandle);
-
-            // Automatically registering uniforms
+        // Automatically registering uniforms
+        protected void AutoRegisterUniforms()
+        {
             GL.GetProgram(shaderHandle, GetProgramParameterName.ActiveUniforms, out int uniformCount);
 
-            for (int i = 0; i < uniformCount; i++) 
+            for (int i = 0; i < uniformCount; i++)
             {
                 GL.GetActiveUniform(shaderHandle, i, 256, out _, out _, out _, out string uniformName);
                 int location = GL.GetUniformLocation(shaderHandle, uniformName);
                 uniformLocations[uniformName] = location;
             }
-
-            // Clean up
-            GL.DetachShader(shaderHandle, vertexShader);
-            GL.DetachShader(shaderHandle, fragmentShader);
-
-            GL.DeleteShader(vertexShader);
-            GL.DeleteShader(fragmentShader);
         }
 
         // Loads and compiles a shader of a given type
@@ -65,7 +53,7 @@ namespace OpenGL_Learning.Engine
             return handle;
         }
 
-        // Loads shader soruce code from file
+        // Loads shader source code from file
         protected static string LoadShaderSource(string filepath)
         {
             string shaderSource = "";
