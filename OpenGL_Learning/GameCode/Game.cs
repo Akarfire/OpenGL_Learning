@@ -41,7 +41,7 @@ namespace GameCode
 
 
             // Enabling post processing
-            engine.UsePostProcessing = true;
+            engine.renderingMethod = RenderingMethod.RasterWithPostProcessing;
             engine.postProcessShader = "Fog_PPS";
 
             // Creating world and objects

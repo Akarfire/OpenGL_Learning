@@ -1,0 +1,24 @@
+#version 460 core
+
+// Inputs
+layout(local_size_x = 16, local_size_y = 16) in; // Defines the size of a working group
+
+// Outputs
+layout(rgba32f, binding = 0) writeonly uniform image2D outputImage; // Defines the image we are going to be outputting the result to (Texture Unit 0)
+
+
+
+
+void main() 
+{
+    uvec2 invocationID = gl_GlobalInvocationID.xy;
+
+    // Calculating uv coordinates
+    vec2 uv = vec2(invocationID) / vec2(imageSize(outputImage));
+
+    // Calculating pixel color
+    vec3 color = vec3(uv, 0.5); // simple gradient
+
+    // Storing the result to the image
+    imageStore(outputImage, ivec2(invocationID), vec4(color, 1.0));
+}

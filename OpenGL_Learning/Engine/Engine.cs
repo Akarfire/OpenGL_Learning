@@ -9,6 +9,8 @@ using OpenGL_Learning.Engine.Objects;
 
 namespace OpenGL_Learning.Engine
 {
+    public enum RenderingMethod { Raster, RasterWithPostProcessing, RayTracing }
+
     public class Engine
     {
         // Modules
@@ -36,14 +38,18 @@ namespace OpenGL_Learning.Engine
 
 
         // Rendering
+        public RenderingMethod renderingMethod = RenderingMethod.Raster;
 
         // Buffering
         int framebuffer = -1;
         Texture sceneColorTexture = null;
         Texture sceneDepthTexture = null;
 
-        public bool UsePostProcessing = false;
+        // Post processing
         public string postProcessShader = "";
+
+        // Ray tracing
+        public string rayTracingComputeShader = "";
 
         // Plane, to which the scene is going to be rendered (if post processing is enabled)
         MeshObject renderPlane = null;
@@ -62,44 +68,64 @@ namespace OpenGL_Learning.Engine
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
 
-            // Creating a frame buffer
-            framebuffer = GL.GenFramebuffer();
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            // Post processing setup
+            if (renderingMethod == RenderingMethod.RasterWithPostProcessing)
+            {
+                // Creating a frame buffer
+                framebuffer = GL.GenFramebuffer();
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 
-            // Binding scene color texture to framebuffer (scene will be rendered here)
-            sceneColorTexture = new Texture(windowWidth, windowHeight);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, sceneColorTexture.textureHandle, 0);
+                // Binding scene color texture to framebuffer (scene will be rendered here)
+                sceneColorTexture = new Texture(windowWidth, windowHeight);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, sceneColorTexture.textureHandle, 0);
 
-            // Binding scene depth texture to framebuffer
-            sceneDepthTexture = new Texture(windowWidth, windowHeight, TextureType.DepthMap);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, sceneDepthTexture.textureHandle, 0);
+                // Binding scene depth texture to framebuffer
+                sceneDepthTexture = new Texture(windowWidth, windowHeight, TextureType.DepthMap);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, sceneDepthTexture.textureHandle, 0);
 
-            // Modifying depth texture parameters
-            sceneDepthTexture.UseTexture(TextureUnit.Texture0);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)All.None);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+                // Modifying depth texture parameters
+                sceneDepthTexture.UseTexture(TextureUnit.Texture0);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)All.None);
+                GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            // Specifying draw/read buffers
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
+                // Specifying draw/read buffers
+                GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+                GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
 
-            // Error checking
-            if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
-                throw new Exception("ERROR: Failed creating frame buffer");
+                // Error checking
+                if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+                    throw new Exception("ERROR: Failed creating frame buffer");
 
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
 
 
-            // Registering textures
-            AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
-            AddTexture("ENGINE_SceneDepth_T", sceneDepthTexture);
+                // Registering textures
+                AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
+                AddTexture("ENGINE_SceneDepth_T", sceneDepthTexture);
 
-            // Initiating render plane
-            AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
 
-            //"ENGINE_SceneColor_T", "ENGINE_SceneDepth_T"
-            renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
-            
+                // Initiating render plane
+                AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
+
+                renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
+            }
+
+            // Ray tracing setup
+            else if (renderingMethod == RenderingMethod.RayTracing)
+            {     
+                sceneColorTexture = new Texture(windowWidth, windowHeight, TextureType.ComputeShaderOutput);
+                AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
+
+                // Initiating render plane
+                AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
+
+                // Registering default shader
+                AddShader("ENGINE_RayTracingRenderPlane_S", new RenderShader(this,
+                    "../../../Engine/Rendering/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.vert",
+                    "../../../Engine/Rendering/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.frag"));
+
+                renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", "ENGINE_RayTracingRenderPlane_S", new string[] { "ENGINE_SceneColor_T" });
+            }
 
             // Running the window
             gameWindow.Run();
@@ -152,49 +178,83 @@ namespace OpenGL_Learning.Engine
 
         public void Render(float deltaTime)
         {
-            if (UsePostProcessing)
+            if (renderingMethod == RenderingMethod.RasterWithPostProcessing)
             {
                 // Binding frame buffer
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
             }
 
-            // Clearing old stuff in the frame buffer
-            GL.ClearColor(0.0f, 0.0f, 0f, 1f);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            if (currentWorld == null) return;
-
-            // Engine-level shader uniforms
-            foreach (var shaderPair in shaders)
+            // Draw calls for all objects in the scene (used for raster rendering)
+            if (  renderingMethod == RenderingMethod.RasterWithPostProcessing
+                || renderingMethod == RenderingMethod.Raster)
             {
-                var shader = shaderPair.Value;
+                // Clearing old stuff in the frame buffer
+                GL.ClearColor(0.0f, 0.0f, 0f, 1f);
+                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-                shader.UseShader();
+                if (currentWorld == null) return;
 
-                shader.SetUniform("time", currentWorld.time);
+                // Engine-level shader uniforms
+                foreach (var shaderPair in shaders)
+                {
+                    var shader = shaderPair.Value;
 
-                shader.SetUniform("light_direction", currentWorld.lightDirection);
-                shader.SetUniform("ambient_light", 0.5f);
+                    shader.UseShader();
 
-                shader.SetUniform("screen_width", (float)windowWidth);
-                shader.SetUniform("screen_height", (float)windowHeight);
+                    shader.SetUniform("time", currentWorld.time);
 
-                shader.SetUniform("camera_location", currentWorld.worldCamera.location);
-                shader.SetUniform("camera_vector", currentWorld.worldCamera.forwardVector);
+                    shader.SetUniform("light_direction", currentWorld.lightDirection);
+                    shader.SetUniform("ambient_light", 0.5f);
 
-                shader.SetUniform("view", currentWorld.worldCamera.GetViewMatrix(), true);
-                shader.SetUniform("projection", currentWorld.worldCamera.GetProjectionMatrix(), true);
+                    shader.SetUniform("screen_width", (float)windowWidth);
+                    shader.SetUniform("screen_height", (float)windowHeight);
 
-                shader.SetUniform("view_inverse", currentWorld.worldCamera.GetViewMatrix().Inverted(), true);
-                shader.SetUniform("projection_inverse", currentWorld.worldCamera.GetProjectionMatrix().Inverted(), true);
+                    shader.SetUniform("camera_location", currentWorld.worldCamera.location);
+                    shader.SetUniform("camera_vector", currentWorld.worldCamera.forwardVector);
 
-                shader.StopUsingShader();
+                    shader.SetUniform("view", currentWorld.worldCamera.GetViewMatrix(), true);
+                    shader.SetUniform("projection", currentWorld.worldCamera.GetProjectionMatrix(), true);
+
+                    shader.SetUniform("view_inverse", currentWorld.worldCamera.GetViewMatrix().Inverted(), true);
+                    shader.SetUniform("projection_inverse", currentWorld.worldCamera.GetProjectionMatrix().Inverted(), true);
+
+                    shader.StopUsingShader();
+                }
+
+                // Rendering current world
+                currentWorld.RenderWorld(deltaTime);
             }
 
-            // Rendering current world
-            currentWorld.RenderWorld(deltaTime);
-            
-            if (UsePostProcessing)
+
+            // Rendering with ray tracing
+            else if (renderingMethod == RenderingMethod.RayTracing)
+            {
+                // Dispatching the compute shader
+                ComputeShader rayTracingShader = (ComputeShader)shaders[rayTracingComputeShader];
+
+                rayTracingShader.UseShader();
+
+                // Sending mesh data to the SSBO
+
+                // Binding output image
+                GL.BindImageTexture(0, textures["ENGINE_SceneColor_T"].textureHandle, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
+
+                // Dispatching compute shader
+                int groupSizeX = 16;
+                int groupSizeY = 16;
+
+                int groupsX = (windowWidth + groupSizeX - 1) / groupSizeX;
+                int groupsY = (windowHeight + groupSizeY - 1) / groupSizeY;
+
+                rayTracingShader.DispatchShader(groupsX, groupsY, MemoryBarrierFlags.ShaderImageAccessBarrierBit);
+
+            }
+
+
+            // Drawing the render plane
+            if (renderingMethod == RenderingMethod.RasterWithPostProcessing
+                 || renderingMethod == RenderingMethod.RayTracing)
             {
                 // Back to screen rendering
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -203,7 +263,7 @@ namespace OpenGL_Learning.Engine
                 GL.ClearColor(0.0f, 0.0f, 0f, 1f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-                // Rendering screen to render plane
+                // Rendering render plane to screen
                 renderPlane.Render(currentWorld.worldCamera);
             }
         }
