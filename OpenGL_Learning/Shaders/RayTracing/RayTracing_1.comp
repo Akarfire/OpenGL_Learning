@@ -1,13 +1,282 @@
 #version 460 core
 
+// INPUT DATA STRUCTURES
+
+// Contains all useful data about a camera
+struct Camera
+{
+    /*
+     * We have to add paddings to each vec3, as they are only 12 bytes of data, but read as 16 bytes (as if it is vec4)
+     * paddints help fix the allignment when writing data from CPU to SSBO
+     */
+
+    // Location of the camera in world space
+    vec3 location;              float pad1;
+    
+    // Directional vectors of the camera
+    vec3 forwardVector;         float pad2;
+    vec3 rightVector;           float pad3;
+    vec3 upVector;              float pad4;
+
+    // Camera's FOV
+    float fieldOfView;
+
+    // Screen aspect ratio (width / height)
+    float aspectRatio;
+};
+
+// Contains data about a single light source
+struct Light
+{
+    // Light's location in world space
+    vec3 location;              float pad1;
+
+    // Color of the light
+    vec4 lightColor;
+
+    // Intensity of the light
+    float intensity;
+};
+
+
+// INPUT / OUTPUTS
+
 // Inputs
 layout(local_size_x = 16, local_size_y = 16) in; // Defines the size of a working group
 
 // Outputs
 layout(rgba32f, binding = 0) writeonly uniform image2D outputImage; // Defines the image we are going to be outputting the result to (Texture Unit 0)
 
+// Buffers
+layout(std430, binding = 0) buffer CameraBuffer {
+    Camera camera;
+};
 
 
+// STRUCTS
+
+// Contains data about a single ray
+struct Ray
+{
+    // Where the ray originates
+    vec3 origin;
+
+    // The direction the ray is pointing
+    vec3 direction;
+
+    // Maximum tracing distance
+    float distance;
+
+    //...
+
+};
+
+// Contains data about a hit of the ray
+struct Hit
+{
+    // Id of the object, that was hit
+    int objectId;
+
+    // Id of the material, that was hit
+    int materialId;
+
+    // Point in space, where the hit was detected
+    vec3 location;
+
+    // Distance from the ray's origin to the hit location
+    float distance;
+
+    // Surface normal in the hit location
+    vec3 normal;
+};
+
+// Contains data about a primitive sphere
+struct Sphere
+{
+    // Location of the sphere's center
+    vec3 center;
+
+    // Radius of the sphere
+    float radius;
+};
+
+
+// FUNCTIONS
+
+// Pseudo random number generator
+float rand(vec2 coords) 
+{
+    return fract(sin(dot(coords, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+// Random vector in a hemisphere
+vec3 randomHemisphere(vec3 normal, vec2 randUV)
+{
+    float phi = rand(randUV) * 2.0 * 3.14159;
+    float cosTheta = rand(randUV + 0.1234);
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+    vec3 tangent = normalize(cross(normal, vec3(0.0, 1.0, 0.0)));
+    vec3 bitangent = cross(normal, tangent);
+
+    return normalize(
+        sinTheta * cos(phi) * tangent +
+        sinTheta * sin(phi) * bitangent +
+        cosTheta * normal
+    );
+}
+
+
+// Ray collision checks
+
+bool RayCheckSphere(out Hit outHit, Sphere sphere, Ray ray)
+{
+    vec3 oc = ray.origin - sphere.center;
+
+    float a = dot(ray.direction, ray.direction);         // Often 1.0
+    float b = 2.0 * dot(oc, ray.direction);
+    float c = dot(oc, oc) - sphere.radius * sphere.radius;
+
+    float discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant < 0.0) 
+    {
+        return false; // no intersection
+    }
+
+    float sqrtDisc = sqrt(discriminant);
+
+    // Return the nearest positive t
+    float t0 = (-b - sqrtDisc) / (2.0 * a);
+    float t1 = (-b + sqrtDisc) / (2.0 * a);
+
+    outHit.distance = (t0 > 0.0) ? t0 : t1;
+    outHit.location = ray.origin + ray.direction * outHit.distance;
+    outHit.normal = normalize(outHit.location - sphere.center);
+
+    return outHit.distance > 0.0;
+}
+
+
+// Traces a ray and returns true, if the ray hit something, puts hit result data into outHit
+bool RayTrace(out Hit outHit, Ray ray)
+{
+    // Sphere example
+    Sphere sphere1;
+    sphere1.center = vec3(2, 0, 0);
+    sphere1.radius = 1;
+
+    Sphere sphere2;
+    sphere2.center = vec3(-3, -3, -3);
+    sphere2.radius = 2;
+
+    Sphere spheres[2] = Sphere[](sphere1, sphere2);
+
+    // Looping over all of the primitives and getting the closest hit
+    Hit closestHit;
+    closestHit.distance = ray.distance;
+
+    for (int i = 0; i < spheres.length(); i++)
+    {
+        Hit localHit;
+        if (RayCheckSphere(localHit, spheres[i], ray))
+        {
+            closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+        }
+    }
+
+    outHit = closestHit;
+    return closestHit.distance < ray.distance;
+}
+
+bool ShadowTrace(Hit hit, vec3 direction)
+{
+    Ray lightTraceRay;
+    lightTraceRay.origin = hit.location + hit.normal * 0.001;
+    lightTraceRay.direction = direction;
+    lightTraceRay.distance = 100;
+
+    Hit lightTraceHit;
+    return RayTrace(lightTraceHit, lightTraceRay);
+}
+
+float SampleShadow(Hit hit, vec3 lightDirection, float lightSoftness, vec2 randomSeed)
+{
+    float shadow = 0;
+
+    int baseSamples = 4;
+    int extraSamples = 16;
+
+    float extraThreshold = 0.2;
+
+    int shadowCouter = 0;
+    for (int i = 0; i < baseSamples; i++)
+    {
+        shadowCouter += int(ShadowTrace(hit, normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i) * 12.37) * lightSoftness)));
+    }
+
+    float divergense = 1 - (shadowCouter / baseSamples);
+
+    shadow = mix(0, 1, 1 - divergense);
+
+    if (divergense > extraThreshold)
+    {
+        for (int i = 0; i < extraSamples - 1; i++)
+        {
+            vec3 localLightDirection =  normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i + baseSamples) * 12.37) * lightSoftness);
+            bool inShadow = ShadowTrace(hit, localLightDirection);
+
+            shadow = shadow + float(inShadow);
+        }
+
+        shadow /= extraSamples;
+    }
+
+    return shadow;
+}
+
+vec4 ShadeObject(Hit hit, vec2 randomSeed)
+{
+    vec4 color = vec4(0);
+
+    vec3 lightDirection = normalize(vec3(1, 1, 1));
+    float lightSoftness = 0.002;
+    float ambientLight = 0.6;
+
+    float shadow = clamp(
+        max(SampleShadow(hit, lightDirection, lightSoftness, randomSeed), (1 - pow( clamp(dot(hit.normal, lightDirection), 0, 1), 0.25 ) )),
+         0, 1 - ambientLight);
+
+    //clamp( dot(hit.normal, localLightDirection), 0, 1) *
+    //return vec4(vec3(shadow), 1);
+    return vec4(1) * (1 - shadow);
+}
+
+vec4 ShadeBackground(vec3 origin, vec3 direction)
+{
+    vec3 lightDirection = normalize(vec3(1, 1, 1));
+
+    float verticalFactor = clamp(dot(direction, vec3(0, 1, 0)), 0, 1);
+
+    vec4 skyColor = mix( vec4(0.4, 0.4, 1, 1), vec4(0.1, 0.1, 1, 1), verticalFactor);
+
+    // float sunFactor = pow(clamp(dot(direction, lightDirection), 0, 1), 20);
+    // sunFactor = mix(sunFactor, 1, float(sunFactor > 0.001));
+    //vec4 sunColor = mix(vec4(1, 1, 0, 1), vec4(1), sunFactor);
+
+    float sunMask = pow(clamp(dot(lightDirection, direction), 0.0, 1.0), 100);
+    sunMask = pow(sunMask, 0.2);
+
+    vec4 sunColorCrown = vec4(1.0, 0.7, 0.0, 1.0);
+
+    vec4 sunColor = mix(sunColorCrown, vec4(1), 
+        mix ( sunMask, 1, float(sunMask > 0.9) ));
+
+    return mix(skyColor, sunColor, sunMask);
+}
+
+
+// MAIN
 
 void main() 
 {
@@ -15,10 +284,27 @@ void main()
 
     // Calculating uv coordinates
     vec2 uv = vec2(invocationID) / vec2(imageSize(outputImage));
+    uv = uv * 2.0 - 1.0;
+
+    // Calculating camera uvs
+    vec2 cameraUV = uv;
+    cameraUV.x *= camera.aspectRatio;
+    cameraUV *= tan(camera.fieldOfView * 0.5); // scale to field of view
+
+    // Ray settings
+    Ray ray;
+    ray.direction = normalize(cameraUV.x * camera.rightVector + cameraUV.y * camera.upVector + camera.forwardVector);
+    ray.origin = camera.location;
+    ray.distance = 100;
+
+    // Tracing
+    Hit hit;
+    bool didHit = RayTrace(hit, ray);
 
     // Calculating pixel color
-    vec3 color = vec3(uv, 0.5); // simple gradient
+    vec4 color = mix(ShadeBackground(ray.origin, ray.direction), ShadeObject(hit, vec2(invocationID)), float(didHit));
+    color.a = 1;
 
     // Storing the result to the image
-    imageStore(outputImage, ivec2(invocationID), vec4(color, 1.0));
+    imageStore(outputImage, ivec2(invocationID), color);
 }

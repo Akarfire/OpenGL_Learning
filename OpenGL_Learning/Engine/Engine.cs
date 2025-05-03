@@ -5,6 +5,9 @@ using OpenGL_Learning.Engine.Rendering;
 using OpenTK.Mathematics;
 using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
 using OpenGL_Learning.Engine.Objects;
+using System.Runtime.InteropServices;
+using OpenGL_Learning.Engine.Objects.Player;
+using OpenTK.Graphics;
 
 
 namespace OpenGL_Learning.Engine
@@ -50,6 +53,9 @@ namespace OpenGL_Learning.Engine
 
         // Ray tracing
         public string rayTracingComputeShader = "";
+        private int lightsSSBO = 0;
+        private int cameraSSBO = 0;
+        private int meshSSBO = 0;
 
         // Plane, to which the scene is going to be rendered (if post processing is enabled)
         MeshObject renderPlane = null;
@@ -125,6 +131,22 @@ namespace OpenGL_Learning.Engine
                     "../../../Engine/Rendering/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.frag"));
 
                 renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", "ENGINE_RayTracingRenderPlane_S", new string[] { "ENGINE_SceneColor_T" });
+
+
+                // Generating SSBOs
+
+                // Camera SSBO
+                cameraSSBO = GL.GenBuffer();
+                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cameraSSBO);
+
+                CameraData initialCameraData = new CameraData();
+                GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<CameraData>(), ref initialCameraData, BufferUsageHint.DynamicDraw);
+                
+                GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, cameraSSBO); // Binding camera SSBO to "slot" 0
+
+                //lightsSSBO = GL.GenBuffer();
+                //meshSSBO = GL.GenBuffer();
+
             }
 
             // Running the window
@@ -233,13 +255,20 @@ namespace OpenGL_Learning.Engine
                 // Dispatching the compute shader
                 ComputeShader rayTracingShader = (ComputeShader)shaders[rayTracingComputeShader];
 
-                rayTracingShader.UseShader();
 
-                // Sending mesh data to the SSBO
+                // Sending data to SSBOs
+
+                // Camera SSBO
+                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cameraSSBO);
+                CameraData cameraData = GetCurrentCameraData();
+                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, Marshal.SizeOf<CameraData>(), ref cameraData);
 
                 // Binding output image
                 GL.BindImageTexture(0, textures["ENGINE_SceneColor_T"].textureHandle, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
 
+
+                rayTracingShader.UseShader(); 
+                
                 // Dispatching compute shader
                 int groupSizeX = 16;
                 int groupSizeY = 16;
@@ -268,6 +297,25 @@ namespace OpenGL_Learning.Engine
             }
         }
 
+        CameraData GetCurrentCameraData()
+        {
+            CameraData cameraData = new CameraData();
+
+            if (currentWorld == null) return cameraData;
+            Camera camera = currentWorld.worldCamera;
+
+            // Setting data
+            cameraData.location = camera.location;
+
+            cameraData.forwardVector = camera.forwardVector;
+            cameraData.rightVector = camera.rightVector;
+            cameraData.upVector = camera.upVector;
+
+            cameraData.fieldOfView = MathHelper.DegreesToRadians(camera.fov);
+            cameraData.aspectRatio = (float)windowWidth / windowHeight;
+
+            return cameraData;
+        }
 
         // Window management
 
