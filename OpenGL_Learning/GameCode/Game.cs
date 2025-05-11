@@ -1,8 +1,8 @@
 ﻿using OpenGL_Learning.Engine;
 using OpenGL_Learning.Engine.Objects.MeshObjects;
-using OpenGL_Learning.Engine.Scripts.EngineScripts;
-using OpenGL_Learning.Engine.Rendering;
 using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
+using OpenGL_Learning.Engine.Scripts.EngineScripts;
+using OpenGL_Learning.Engine.Rendering.Shaders;
 using OpenTK.Mathematics;
 using OpenGL_Learning.Engine.Objects;
 

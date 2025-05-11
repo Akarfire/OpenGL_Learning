@@ -3,7 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 using System.Runtime.InteropServices;
 using System;
 
-namespace OpenGL_Learning.Engine.Rendering
+namespace OpenGL_Learning.Engine.Rendering.Mesh
 {
     public struct Vertex
     {

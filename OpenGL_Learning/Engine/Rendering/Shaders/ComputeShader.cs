@@ -1,7 +1,7 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
-namespace OpenGL_Learning.Engine.Rendering
+namespace OpenGL_Learning.Engine.Rendering.Shaders
 {
     public class ComputeShader : Shader
     {
@@ -24,7 +24,7 @@ namespace OpenGL_Learning.Engine.Rendering
         // Dispatching compute shader
 
         public void DispatchShader(int numberOfGroups_X, int numberOfGroups_Y, int numberOfGroups_Z, MemoryBarrierFlags memoryBarrier)
-        { 
+        {
             GL.UseProgram(shaderHandle);
             GL.DispatchCompute(numberOfGroups_X, numberOfGroups_Y, numberOfGroups_Z);
 

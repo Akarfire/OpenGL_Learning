@@ -1,6 +1,7 @@
 ﻿using OpenGL_Learning.Engine.Objects;
 using OpenTK.Mathematics;
 using Assimp;
+using OpenGL_Learning.Engine.Rendering.Mesh;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {

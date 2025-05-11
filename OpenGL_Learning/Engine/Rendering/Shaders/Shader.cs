@@ -2,7 +2,7 @@
 using OpenTK.Mathematics;
 
 
-namespace OpenGL_Learning.Engine
+namespace OpenGL_Learning.Engine.Rendering.Shaders
 {
 
     public class Shader
@@ -36,7 +36,7 @@ namespace OpenGL_Learning.Engine
         }
 
         // Loads and compiles a shader of a given type
-        protected static int CompileShader(ShaderType type, string filePath) 
+        protected static int CompileShader(ShaderType type, string filePath)
         {
             int handle = GL.CreateShader(type);
             GL.ShaderSource(handle, LoadShaderSource(filePath));
@@ -95,7 +95,7 @@ namespace OpenGL_Learning.Engine
 
         // Uniform setters
 
-        public void SetUniform(string uniformName, int value) 
+        public void SetUniform(string uniformName, int value)
         {
             if (uniformLocations.TryGetValue(uniformName, out int location))
                 GL.Uniform1(location, value);

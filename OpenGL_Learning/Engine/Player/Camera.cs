@@ -72,8 +72,8 @@ namespace OpenGL_Learning.Engine.Objects.Player
                 lastMousePosition.X = mouseInput.X;
                 lastMousePosition.Y = mouseInput.Y;
 
-
-                AddRotation(new Vector3(0, deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
+                if (deltaX != 0 || deltaY != 0)
+                    AddRotation(new Vector3(0, deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
 
                 // Clamping pitch
                 Vector3 clampedRotation = rotation;
@@ -101,6 +101,13 @@ namespace OpenGL_Learning.Engine.Objects.Player
         {
             screenHeight = newScreenHeight;
             screenWidth = newScreenWidth;
+        }
+
+        protected override void OnTransformationUpdated()
+        {
+            base.OnTransformationUpdated();
+
+            engine.ResetRayTracingAccumulation();
         }
     }
 }

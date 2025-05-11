@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using OpenGL_Learning.Engine.Rendering.Mesh;
+using OpenTK.Mathematics;
 using System.Security.Principal;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData

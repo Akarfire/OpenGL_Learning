@@ -8,6 +8,8 @@ using OpenGL_Learning.Engine.Objects;
 using System.Runtime.InteropServices;
 using OpenGL_Learning.Engine.Objects.Player;
 using OpenTK.Graphics;
+using OpenGL_Learning.Engine.Rendering.Shaders;
+using OpenGL_Learning.Engine.Rendering.Mesh;
 
 
 namespace OpenGL_Learning.Engine
@@ -39,6 +41,8 @@ namespace OpenGL_Learning.Engine
         public KeyboardState cachedKeyboardState { get; private set; } = null;
         public MouseState cachedMouseState { get; private set; } = null;
 
+        // Files
+        public string EngineFilesDirectory { get; private set; } = "../../../Engine/";
 
         // Rendering
         public RenderingMethod renderingMethod = RenderingMethod.Raster;
@@ -57,8 +61,15 @@ namespace OpenGL_Learning.Engine
         private int cameraSSBO = 0;
         private int meshSSBO = 0;
 
+        // Ray tracing accumulation
+        private int frameCountSinceLastCameraMovement = 0;
+
         // Plane, to which the scene is going to be rendered (if post processing is enabled)
         MeshObject renderPlane = null;
+
+
+        // Other cached values
+        int lastFrameNumberOfLights = 0;
 
         // ---------------
 
@@ -116,6 +127,7 @@ namespace OpenGL_Learning.Engine
                 renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
             }
 
+
             // Ray tracing setup
             else if (renderingMethod == RenderingMethod.RayTracing)
             {     
@@ -127,8 +139,8 @@ namespace OpenGL_Learning.Engine
 
                 // Registering default shader
                 AddShader("ENGINE_RayTracingRenderPlane_S", new RenderShader(this,
-                    "../../../Engine/Rendering/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.vert",
-                    "../../../Engine/Rendering/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.frag"));
+                    "../../../Engine/Rendering/Shaders/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.vert",
+                    "../../../Engine/Rendering/Shaders/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.frag"));
 
                 renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", "ENGINE_RayTracingRenderPlane_S", new string[] { "ENGINE_SceneColor_T" });
 
@@ -144,7 +156,15 @@ namespace OpenGL_Learning.Engine
                 
                 GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, cameraSSBO); // Binding camera SSBO to "slot" 0
 
-                //lightsSSBO = GL.GenBuffer();
+                // Lights SSBO
+                lightsSSBO = GL.GenBuffer();
+                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, lightsSSBO);
+
+                List<LightData> initialLightData = new List<LightData>();
+                GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<LightData>() * initialLightData.Count, initialLightData.ToArray(), BufferUsageHint.DynamicDraw);
+
+                GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, lightsSSBO); // Binding light SSBO to "slot" 1
+
                 //meshSSBO = GL.GenBuffer();
 
             }
@@ -255,20 +275,42 @@ namespace OpenGL_Learning.Engine
                 // Dispatching the compute shader
                 ComputeShader rayTracingShader = (ComputeShader)shaders[rayTracingComputeShader];
 
+                // Accumulation logic
+                frameCountSinceLastCameraMovement++;
 
                 // Sending data to SSBOs
 
                 // Camera SSBO
                 GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cameraSSBO);
                 CameraData cameraData = GetCurrentCameraData();
-                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, 0, Marshal.SizeOf<CameraData>(), ref cameraData);
+                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, Marshal.SizeOf<CameraData>(), ref cameraData);
+
+                // Lights SSBO
+                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, lightsSSBO);
+
+                List<LightData> lightData = currentWorld.GetLightData();
+
+                /* If number the number of lights has changed since the last frame, then we have to realocate buffer's memory;
+                 * If it didn't change: we can just upload our data to the already allocated memory
+                 */
+                if (lastFrameNumberOfLights == lightData.Count)
+                    GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, Marshal.SizeOf<LightData>() * lightData.Count, lightData.ToArray());
+
+                else
+                    GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<LightData>() * lightData.Count, lightData.ToArray(), BufferUsageHint.DynamicDraw);
+
+                lastFrameNumberOfLights = lightData.Count;
 
                 // Binding output image
                 GL.BindImageTexture(0, textures["ENGINE_SceneColor_T"].textureHandle, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
 
 
-                rayTracingShader.UseShader(); 
-                
+                rayTracingShader.UseShader();
+
+                // Setting uniforms
+                rayTracingShader.SetUniform("lightCount", lightData.Count);
+                rayTracingShader.SetUniform("frame", frameCountSinceLastCameraMovement);
+
                 // Dispatching compute shader
                 int groupSizeX = 16;
                 int groupSizeY = 16;
@@ -295,6 +337,15 @@ namespace OpenGL_Learning.Engine
                 // Rendering render plane to screen
                 renderPlane.Render(currentWorld.worldCamera);
             }
+
+
+            // GPU DEBUGGING
+            // ----
+
+            //var error = GL.GetError();
+            //Console.WriteLine(error);
+
+            // ----
         }
 
         CameraData GetCurrentCameraData()
@@ -315,6 +366,11 @@ namespace OpenGL_Learning.Engine
             cameraData.aspectRatio = (float)windowWidth / windowHeight;
 
             return cameraData;
+        }
+
+        public void ResetRayTracingAccumulation()
+        {
+            frameCountSinceLastCameraMovement = 0;
         }
 
         // Window management

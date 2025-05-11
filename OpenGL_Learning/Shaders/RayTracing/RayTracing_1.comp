@@ -29,13 +29,54 @@ struct Camera
 struct Light
 {
     // Light's location in world space
-    vec3 location;              float pad1;
+    vec3 location;  // 12
+    
+    /*
+     Type of the light:
+        '0' - point light;
+        '1' - directional light;
+     */
+    int type; // 4
 
     // Color of the light
-    vec4 lightColor;
+    vec3 lightColor; // 12
 
     // Intensity of the light
-    float intensity;
+    float intensity; // 4
+
+    // Forward vector of the light object
+    vec3 direction; // 12
+
+    // Softness of the light
+    float softness; // 4
+};
+
+
+// Contains data about surface material
+struct Material
+{
+    // Color of the surface
+    vec3 color;
+
+    // Roughness of the surface
+    float roughness;
+    
+    // Self light color of the surface
+    vec3 emissionColor;
+
+    // Self light strength
+    float emissionStrength;
+
+    // How metallic the surface is
+    float metallic;
+    
+    // Transparency of the surface (0 - opaque, 1 - transparent)
+    float transparency;
+
+    // Index of refraction of transparent materials
+    float refractionIndex;          
+    
+    float pad;
 };
 
 
@@ -45,12 +86,29 @@ struct Light
 layout(local_size_x = 16, local_size_y = 16) in; // Defines the size of a working group
 
 // Outputs
-layout(rgba32f, binding = 0) writeonly uniform image2D outputImage; // Defines the image we are going to be outputting the result to (Texture Unit 0)
+layout(rgba32f, binding = 0) uniform image2D outputImage; // Defines the image we are going to be outputting the result to (Texture Unit 0)
 
-// Buffers
-layout(std430, binding = 0) buffer CameraBuffer {
+
+// Uniforms
+uniform int frame;
+
+
+// Camera
+layout(std430, binding = 0) buffer CameraBuffer 
+{
     Camera camera;
 };
+
+
+// Number of lights to process
+uniform int lightCount;
+
+// Lights
+layout(std430, binding = 1) buffer LightBuffer 
+{
+    Light lights[];
+};
+
 
 
 // STRUCTS
@@ -103,6 +161,10 @@ struct Sphere
 
 // FUNCTIONS
 
+// --------------
+// RANDOM
+// --------------
+
 // Pseudo random number generator
 float rand(vec2 coords) 
 {
@@ -127,8 +189,12 @@ vec3 randomHemisphere(vec3 normal, vec2 randUV)
 }
 
 
-// Ray collision checks
 
+// --------------
+// Ray collision checks
+// --------------
+
+// Sphere ray collision check
 bool RayCheckSphere(out Hit outHit, Sphere sphere, Ray ray)
 {
     vec3 oc = ray.origin - sphere.center;
@@ -157,6 +223,10 @@ bool RayCheckSphere(out Hit outHit, Sphere sphere, Ray ray)
     return outHit.distance > 0.0;
 }
 
+
+// --------------
+// General Ray Tracing
+// --------------
 
 // Traces a ray and returns true, if the ray hit something, puts hit result data into outHit
 bool RayTrace(out Hit outHit, Ray ray)
@@ -189,41 +259,50 @@ bool RayTrace(out Hit outHit, Ray ray)
     return closestHit.distance < ray.distance;
 }
 
-bool ShadowTrace(Hit hit, vec3 direction)
+
+// --------------
+// Shadow Sampling
+// --------------
+
+// Checks whether the hit point is in shadow from a given light direction
+bool ShadowTrace(Hit hit, vec3 lightDirection)
 {
     Ray lightTraceRay;
     lightTraceRay.origin = hit.location + hit.normal * 0.001;
-    lightTraceRay.direction = direction;
+    lightTraceRay.direction = lightDirection;
     lightTraceRay.distance = 100;
 
     Hit lightTraceHit;
     return RayTrace(lightTraceHit, lightTraceRay);
 }
 
-float SampleShadow(Hit hit, vec3 lightDirection, float lightSoftness, vec2 randomSeed)
+// Checks whether the hit point is in shadow from a light
+float SampleShadow(Hit hit, Light light, vec2 randomSeed)
 {
     float shadow = 0;
 
-    int baseSamples = 4;
+    int baseSamples = 3;
     int extraSamples = 16;
-
     float extraThreshold = 0.2;
+
+    // Determining the light direction based on the light type
+    vec3 lightDirection = mix(light.location - hit.location, light.direction, float(light.type == 1));
 
     int shadowCouter = 0;
     for (int i = 0; i < baseSamples; i++)
     {
-        shadowCouter += int(ShadowTrace(hit, normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i) * 12.37) * lightSoftness)));
+        shadowCouter += int(ShadowTrace(hit, normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i) * 12.37) * light.softness)));
     }
 
     float divergense = 1 - (shadowCouter / baseSamples);
 
-    shadow = mix(0, 1, 1 - divergense);
+    shadow = mix(0, 1, float(shadowCouter > 0));
 
     if (divergense > extraThreshold)
     {
-        for (int i = 0; i < extraSamples - 1; i++)
+        for (int i = 0; i < extraSamples; i++)
         {
-            vec3 localLightDirection =  normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i + baseSamples) * 12.37) * lightSoftness);
+            vec3 localLightDirection =  normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i + baseSamples) * 12.37) * light.softness);
             bool inShadow = ShadowTrace(hit, localLightDirection);
 
             shadow = shadow + float(inShadow);
@@ -235,27 +314,57 @@ float SampleShadow(Hit hit, vec3 lightDirection, float lightSoftness, vec2 rando
     return shadow;
 }
 
+
+// --------------
+// Full processing of the object
+// --------------
+
 vec4 ShadeObject(Hit hit, vec2 randomSeed)
 {
     vec4 color = vec4(0);
 
-    vec3 lightDirection = normalize(vec3(1, 1, 1));
-    float lightSoftness = 0.002;
-    float ambientLight = 0.6;
+    float ambientLight = 0.65;
 
-    float shadow = clamp(
-        max(SampleShadow(hit, lightDirection, lightSoftness, randomSeed), (1 - pow( clamp(dot(hit.normal, lightDirection), 0, 1), 0.25 ) )),
-         0, 1 - ambientLight);
+    vec4 lightColor = vec4(0);
 
-    //clamp( dot(hit.normal, localLightDirection), 0, 1) *
-    //return vec4(vec3(shadow), 1);
-    return vec4(1) * (1 - shadow);
+    for (int i = 0; i < lightCount; i++)
+    {
+        // Determining the light direction based on the light type
+        vec3 lightDirection = mix(lights[i].location - hit.location, lights[i].direction, float(lights[i].type == 1));
+
+        float localLightAmmount = 1; 
+
+        // Sampling shadows
+        localLightAmmount *= (1 - SampleShadow(hit, lights[i], randomSeed));
+
+        // Applying light's intensity
+        float lightDistance = dot(hit.location - lights[i].location, hit.location - lights[i].location);
+        localLightAmmount *= mix (lights[i].intensity / lightDistance, lights[i].intensity, float(lights[i].type == 1));
+
+        // Applying normal based shading
+        localLightAmmount = min(localLightAmmount, clamp(dot(hit.normal, lightDirection), 0, 1));
+
+        // Adding to the light color
+        lightColor += vec4(lights[i].lightColor, 1) * localLightAmmount / lights[i].intensity;
+    }
+
+    // Ambient light
+    lightColor += ambientLight * vec4(0.4, 0.4, 1, 1);
+
+    // Normalizing lightColor
+    float maxIntensity = max(lightColor.r, max(lightColor.g, lightColor.b));
+    if (maxIntensity > 1.0) lightColor /= maxIntensity;
+
+    return vec4(1) * lightColor;    
 }
+
+
+// --------------
+// Processing of the background
+// --------------
 
 vec4 ShadeBackground(vec3 origin, vec3 direction)
 {
-    vec3 lightDirection = normalize(vec3(1, 1, 1));
-
     float verticalFactor = clamp(dot(direction, vec3(0, 1, 0)), 0, 1);
 
     vec4 skyColor = mix( vec4(0.4, 0.4, 1, 1), vec4(0.1, 0.1, 1, 1), verticalFactor);
@@ -264,19 +373,84 @@ vec4 ShadeBackground(vec3 origin, vec3 direction)
     // sunFactor = mix(sunFactor, 1, float(sunFactor > 0.001));
     //vec4 sunColor = mix(vec4(1, 1, 0, 1), vec4(1), sunFactor);
 
-    float sunMask = pow(clamp(dot(lightDirection, direction), 0.0, 1.0), 100);
-    sunMask = pow(sunMask, 0.2);
+    vec4 totalSunColor = vec4(0);
+    totalSunColor.a = 1;
 
-    vec4 sunColorCrown = vec4(1.0, 0.7, 0.0, 1.0);
+    for (int i = 0; i < lightCount; i++)
+    {
+        float sunMask = pow(clamp(dot(lights[i].direction, direction), 0.0, 1.0), 100 / lights[i].intensity * 10);
+        sunMask = pow(sunMask, 0.2);
 
-    vec4 sunColor = mix(sunColorCrown, vec4(1), 
-        mix ( sunMask, 1, float(sunMask > 0.9) ));
+        //vec4(1.0, 0.7, 0.0, 1.0)
+        vec4 sunColorCrown = vec4(lights[i].lightColor, 1);
 
-    return mix(skyColor, sunColor, sunMask);
+        vec4 sunColor = mix(sunColorCrown, vec4(1), mix ( sunMask, 1, float(sunMask > 0.9) ));
+
+        totalSunColor += mix(vec4(0), sunColor, float(lights[i].type == 1)) * sunMask;
+    }
+
+    //return mix(skyColor, totalSunColor, sunMask);
+    return skyColor + totalSunColor;
 }
 
 
+// --------------
+// Actual tracing with reflections
+// --------------
+
+vec4 RenderTrace(vec3 origin, vec3 direction, vec2 randomSeed)
+{
+    // Recursive params
+    vec3 currentOrigin = origin;
+    vec3 currentDirection = direction;
+    float attenuation = 2;
+
+    vec4 surfaceColor = vec4(0);
+    vec4 reflectionColor = vec4(0);
+
+    int depth = 0;
+    for (depth = 0; depth < 2; depth++)
+    {
+        // Ray settings
+        Ray ray;
+        ray.origin = currentOrigin;
+        ray.direction = currentDirection;
+        ray.distance = 100;
+
+        // Tracing
+        Hit hit;
+        bool didHit = RayTrace(hit, ray);
+
+        vec4 localColor = attenuation * mix(ShadeBackground(ray.origin, ray.direction),
+                              ShadeObject(hit, randomSeed),
+                              float(didHit));
+
+        surfaceColor = mix(surfaceColor, localColor, float(depth == 0));
+        reflectionColor += mix(vec4(0), localColor, float(depth > 0));
+
+        if (!didHit)
+            break;
+
+        // Reflect the ray
+        currentOrigin = hit.location + hit.normal * 0.001;
+        currentDirection = reflect(currentDirection, hit.normal);
+
+        // Reduce contribution of further bounces
+        attenuation *= 0.5;
+    }
+
+    vec4 color = mix(surfaceColor, mix(reflectionColor, surfaceColor, 0.5), float(depth > 0));
+
+    color.a = 1.0;
+    return color;
+}
+
+
+
+
+// --------------
 // MAIN
+// --------------
 
 void main() 
 {
@@ -291,20 +465,16 @@ void main()
     cameraUV.x *= camera.aspectRatio;
     cameraUV *= tan(camera.fieldOfView * 0.5); // scale to field of view
 
-    // Ray settings
-    Ray ray;
-    ray.direction = normalize(cameraUV.x * camera.rightVector + cameraUV.y * camera.upVector + camera.forwardVector);
-    ray.origin = camera.location;
-    ray.distance = 100;
+    // Render Trace
+    vec3 rayDirection = normalize(cameraUV.x * camera.rightVector + cameraUV.y * camera.upVector + camera.forwardVector);
+    vec2 randomSeed = vec2(invocationID) + + vec2(frame * 17, frame * 43);
 
-    // Tracing
-    Hit hit;
-    bool didHit = RayTrace(hit, ray);
-
-    // Calculating pixel color
-    vec4 color = mix(ShadeBackground(ray.origin, ray.direction), ShadeObject(hit, vec2(invocationID)), float(didHit));
-    color.a = 1;
+    vec4 color = RenderTrace(camera.location, rayDirection, randomSeed);
+   
+    // Averaging the result
+    vec4 previousFrameColor = imageLoad(outputImage, ivec2(invocationID));
+    vec4 averageResult = mix(previousFrameColor, color, 1.0 / float(frame + 1));
 
     // Storing the result to the image
-    imageStore(outputImage, ivec2(invocationID), color);
+    imageStore(outputImage, ivec2(invocationID), averageResult);
 }

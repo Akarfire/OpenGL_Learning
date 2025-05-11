@@ -1,5 +1,5 @@
 ﻿using OpenTK.Mathematics;
-using OpenGL_Learning.Engine.Rendering;
+using OpenGL_Learning.Engine.Rendering.Mesh;
 
 namespace OpenGL_Learning.Engine.Objects.MeshObjects
 {

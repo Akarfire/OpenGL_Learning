@@ -1,6 +1,7 @@
 ﻿using OpenGL_Learning.Engine.Objects;
 using OpenGL_Learning.Engine.Objects.Player;
 using OpenGL_Learning.Engine.Player;
+using OpenGL_Learning.Engine.Rendering;
 using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine
@@ -10,8 +11,9 @@ namespace OpenGL_Learning.Engine
         // Engine
         public Engine engine {  get; private set; }
 
-        // Object list
-        protected List<GameObject> objects { get; set; } = new List<GameObject>();
+        // Object lists
+        public List<GameObject> objects { get; protected set; } = new List<GameObject>();
+
 
         // Main camera of the world
         public Camera worldCamera { get; private set; } = null;
@@ -22,7 +24,7 @@ namespace OpenGL_Learning.Engine
 
         // Lighting
         public Vector3 lightDirection = new Vector3(1, 1, 1).Normalized();
-
+        public List<LightData> cachedLightData = new List<LightData>();
 
         // -------
 
@@ -58,11 +60,16 @@ namespace OpenGL_Learning.Engine
         {
             time += deltaTime;
 
+            cachedLightData.Clear();
+
             foreach (GameObject obj in objects) 
             {
                 obj.OnUpdated(deltaTime);
 
                 if (obj is InputInterface) ((InputInterface)obj).onUpdateInput(deltaTime, engine.cachedKeyboardState, engine.cachedMouseState);
+
+                // Caching light data
+                if (obj is LightObject) cachedLightData.Add(((LightObject)obj).GetLightData()); 
             }
         }
 
@@ -97,6 +104,7 @@ namespace OpenGL_Learning.Engine
         public void AddObject(GameObject obj) 
         { 
             objects.Add(obj); 
+
             obj.OnSpawned();
         }
 
@@ -105,5 +113,9 @@ namespace OpenGL_Learning.Engine
             obj.OnDestroyed();
             objects.Remove(obj);
         }
+
+
+        // Access
+        public List<LightData> GetLightData() { return cachedLightData; }
     }
 }

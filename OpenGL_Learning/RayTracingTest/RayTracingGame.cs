@@ -5,6 +5,10 @@ using OpenGL_Learning.Engine.Rendering;
 using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
 using OpenTK.Mathematics;
 using OpenGL_Learning.Engine.Objects;
+using OpenGL_Learning.Engine.Objects.Lights;
+using System.Drawing;
+using OpenGL_Learning.Engine.Rendering.Shaders;
+using OpenGL_Learning.RayTracingTest;
 
 namespace RayTracingTest
 {
@@ -28,6 +32,25 @@ namespace RayTracingTest
 
             // Creating world
             World world = engine.CreateWorld("MyWorld");
+
+            // Creating objects
+
+            // Point light
+            //PointLightObject pointLight = new PointLightObject(engine, 20.0f, Color.White, 0.025f);
+            //world.AddObject(pointLight);
+
+            //LightColorChangerScript lightColorChangerScript = new LightColorChangerScript();
+            //pointLight.AddScript("ColorChanger", lightColorChangerScript);
+
+
+            // Sun 1
+            DirectionalLightObject sun = new DirectionalLightObject(engine, 1.0f, Color.White, 0.025f);
+            world.AddObject(sun);
+            //SunRotationScript sunRotation = new SunRotationScript();
+            //sun.AddScript("rotation", sunRotation);
+
+            sun.SetRotation(new Vector3(0, 15, 25));
+
 
             engine.StartEngine();
         }

@@ -1,7 +1,8 @@
 ﻿using OpenGL_Learning.Engine.Objects.Player;
-using OpenGL_Learning.Engine.Rendering;
 using OpenTK.Mathematics;
 using OpenTK.Graphics.OpenGL4;
+using OpenGL_Learning.Engine.Rendering.Shaders;
+using OpenGL_Learning.Engine.Rendering.Mesh;
 
 
 namespace OpenGL_Learning.Engine.Objects

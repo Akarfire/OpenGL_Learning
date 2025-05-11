@@ -36,13 +36,26 @@ namespace OpenGL_Learning.Engine.Rendering
     public struct LightData
     {
         // Light's location in world space
-        Vector3 location; float pad1;
+        public Vector3 location;
+
+        /*
+        Type of the light:
+            '0' - point light;
+            '1' - directional light;
+         */
+        public int type;
 
         // Color of the light
-        Vector4 lightColor;
+        public Vector3 lightColor;
 
         // Intensity of the light
-        float intensity;
+        public float intensity;
+
+        // Forward vector of the light object
+        public Vector3 direction;
+
+        // Softness of the light
+        public float softness;
     }
 
 }

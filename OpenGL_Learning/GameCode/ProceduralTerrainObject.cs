@@ -1,7 +1,7 @@
 ﻿using OpenGL_Learning.Engine.Objects;
-using OpenGL_Learning.Engine.Rendering;
 using OpenTK.Mathematics;
 using OpenGL_Learning.Engine;
+using OpenGL_Learning.Engine.Rendering.Mesh;
 
 
 namespace GameCode
