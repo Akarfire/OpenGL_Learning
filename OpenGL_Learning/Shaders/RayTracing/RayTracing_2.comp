@@ -165,15 +165,10 @@ struct Sphere
 // RANDOM
 // --------------
 
-// Hash function to generate pseudo-random float based on a 2D seed
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
 // Pseudo random number generator
 float rand(vec2 coords) 
 {
-    return hash(coords);
+    return fract(sin(dot(coords, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 // Random vector in a hemisphere
@@ -191,31 +186,6 @@ vec3 randomHemisphere(vec3 normal, vec2 randUV)
         sinTheta * sin(phi) * bitangent +
         cosTheta * normal
     );
-}
-
-
-// 2D random based on a seed
-vec2 rand2(vec2 seed) {
-    return vec2(hash(seed), hash(seed + 1.0));
-}
-
-// Uniformly distributed point in a unit disk using concentric mapping
-vec2 random_in_unit_disk(vec2 seed) {
-    vec2 r = rand2(seed) * 2.0 - 1.0;
-
-    // Concentric disk mapping
-    if (r.x == 0.0 && r.y == 0.0) return vec2(0.0);
-
-    float theta, r_len;
-    if (abs(r.x) > abs(r.y)) {
-        r_len = r.x;
-        theta = 0.25 * 3.14159265359 * (r.y / r.x);
-    } else {
-        r_len = r.y;
-        theta = 0.5 * 3.14159265359 - 0.25 * 3.14159265359 * (r.x / r.y);
-    }
-
-    return r_len * vec2(cos(theta), sin(theta));
 }
 
 
@@ -300,6 +270,7 @@ bool ShadowTrace(Hit hit, vec3 lightDirection)
     Ray lightTraceRay;
     lightTraceRay.origin = hit.location + hit.normal * 0.001;
     lightTraceRay.direction = lightDirection;
+    lightTraceRay.distance = 100;
 
     Hit lightTraceHit;
     return RayTrace(lightTraceHit, lightTraceRay);
@@ -308,21 +279,38 @@ bool ShadowTrace(Hit hit, vec3 lightDirection)
 // Checks whether the hit point is in shadow from a light
 float SampleShadow(Hit hit, Light light, vec2 randomSeed)
 {
-    float shadow = 0.0;
+    float shadow = 0;
 
+    int baseSamples = 3;
+    int extraSamples = 16;
+    float extraThreshold = 0.2;
+
+    // Determining the light direction based on the light type
     vec3 lightDirection = mix(normalize(light.location - hit.location), light.direction, float(light.type == 1));
 
-    Ray shadowRay;
-    shadowRay.origin = hit.location + hit.normal * 0.001;
-    shadowRay.direction = lightDirection;
-    shadowRay.distance = 100.0;
-
-    Hit shadowHit;
-    if (RayTrace(shadowHit, shadowRay)) 
+    int shadowCouter = 0;
+    for (int i = 0; i < baseSamples; i++)
     {
-       shadow = 1.0;
+        shadowCouter += int(ShadowTrace(hit, normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i) * 12.37) * light.softness)));
     }
-    
+
+    float divergense = 1 - (shadowCouter / baseSamples);
+
+    shadow = mix(0, 1, float(shadowCouter > 0));
+
+    if (divergense > extraThreshold)
+    {
+        for (int i = 0; i < extraSamples; i++)
+        {
+            vec3 localLightDirection =  normalize(lightDirection + randomHemisphere(hit.normal, randomSeed + float(i + baseSamples) * 12.37) * light.softness);
+            bool inShadow = ShadowTrace(hit, localLightDirection);
+
+            shadow = shadow + float(inShadow);
+        }
+
+        shadow /= extraSamples;
+    }
+
     return shadow;
 }
 
@@ -335,14 +323,14 @@ vec4 ShadeObject(Hit hit, vec2 randomSeed)
 {
     vec4 color = vec4(0);
 
-    float ambientLight = 0.8;
+    float ambientLight = 0.65;
 
     vec4 lightColor = vec4(0);
 
     for (int i = 0; i < lightCount; i++)
     {
         // Determining the light direction based on the light type
-        vec3 lightDirection = mix(normalize(lights[i].location - hit.location), lights[i].direction, float(lights[i].type == 1));
+        vec3 lightDirection = mix(lights[i].location - hit.location, lights[i].direction, float(lights[i].type == 1));
 
         float localLightAmmount = 1; 
 
@@ -354,7 +342,7 @@ vec4 ShadeObject(Hit hit, vec2 randomSeed)
         localLightAmmount *= mix (lights[i].intensity / lightDistance, lights[i].intensity, float(lights[i].type == 1));
 
         // Applying normal based shading
-        localLightAmmount = min(localLightAmmount, clamp(pow(dot(hit.normal, lightDirection), lights[i].softness), 0, 1));
+        localLightAmmount = min(localLightAmmount, clamp(dot(hit.normal, lightDirection), 0, 1));
 
         // Adding to the light color
         lightColor += vec4(lights[i].lightColor, 1) * localLightAmmount / lights[i].intensity;
@@ -420,62 +408,38 @@ vec4 RenderTrace(vec3 origin, vec3 direction, vec2 randomSeed)
     vec4 surfaceColor = vec4(0);
     vec4 reflectionColor = vec4(0);
 
-    // Initial trace
-
-    // Ray settings
-    Ray ray;
-    ray.origin = currentOrigin;
-    ray.direction = currentDirection;
-    ray.distance = 100;
-
-    Hit hit;
-    bool didHit = RayTrace(hit, ray);
-
-    surfaceColor = mix(ShadeBackground(ray.origin, ray.direction), ShadeObject(hit, randomSeed), float(didHit));
-
-    if (!didHit) return surfaceColor;
-
-    currentDirection = reflect(currentDirection, hit.normal);
-
-    // Reflection tracing 
-    for (int reflectionDepth = 1; reflectionDepth < 3; reflectionDepth++)
+    int depth = 0;
+    for (depth = 0; depth < 2; depth++)
     {
-        // New ray settings
-        ray.origin = currentOrigin + hit.normal * 0.001;
+        // Ray settings
+        Ray ray;
+        ray.origin = currentOrigin;
+        ray.direction = currentDirection;
         ray.distance = 100;
 
-        vec4 localColor = vec4(0);
+        // Tracing
+        Hit hit;
+        bool didHit = RayTrace(hit, ray);
 
-        // Roughness sample tracing
+        vec4 localColor = attenuation * mix(ShadeBackground(ray.origin, ray.direction),
+                              ShadeObject(hit, randomSeed),
+                              float(didHit));
 
-        int roughnessSamples = 10;
-
-        Hit sampleHit;
-        for (int i = 0; i < roughnessSamples; i++)
-        {
-            vec3 jitterDirection = randomHemisphere(hit.normal, randomSeed + float(i) * 43.0);
-            ray.direction = normalize(currentDirection + jitterDirection * 0.2);
-
-            didHit = RayTrace(sampleHit, ray);
-
-            localColor += attenuation * mix(ShadeBackground(ray.origin, ray.direction), ShadeObject(sampleHit, randomSeed), float(didHit));
-        }
-
-        localColor /= roughnessSamples;
-
-        reflectionColor += localColor;
+        surfaceColor = mix(surfaceColor, localColor, float(depth == 0));
+        reflectionColor += mix(vec4(0), localColor, float(depth > 0));
 
         if (!didHit)
             break;
 
         // Reflect the ray
-        currentDirection = reflect(currentDirection, sampleHit.normal);
+        currentOrigin = hit.location + hit.normal * 0.001;
+        currentDirection = reflect(currentDirection, hit.normal);
 
         // Reduce contribution of further bounces
         attenuation *= 0.5;
     }
 
-    vec4 color = mix(surfaceColor, reflectionColor, 0.15);
+    vec4 color = mix(surfaceColor, mix(reflectionColor, surfaceColor, 0.5), float(depth > 0));
 
     color.a = 1.0;
     return color;
@@ -503,17 +467,46 @@ void main()
 
     // Render Trace
     vec3 rayDirection = normalize(cameraUV.x * camera.rightVector + cameraUV.y * camera.upVector + camera.forwardVector);
-    vec2 randomSeed = vec2(invocationID) ;//+ vec2(frame * 17, frame * 43);
+    vec2 randomSeed = vec2(invocationID) + + vec2(frame * 17, frame * 43);
 
     vec4 color = RenderTrace(camera.location, rayDirection, randomSeed);
    
     // Averaging the result
-    //vec4 previousFrameColor = imageLoad(outputImage, ivec2(invocationID));
-    //vec4 averageResult = mix(previousFrameColor, color, 1.0 / float(frame + 1));
-    //vec4 finalColor = averageResult;
-
-    vec4 finalColor = color;
+    vec4 previousFrameColor = imageLoad(outputImage, ivec2(invocationID));
+    vec4 averageResult = mix(previousFrameColor, color, 1.0 / float(frame + 1));
 
     // Storing the result to the image
-    imageStore(outputImage, ivec2(invocationID), finalColor);
+    imageStore(outputImage, ivec2(invocationID), averageResult);
 }
+
+
+/*
+// Contains data about surface material
+struct Material
+{
+    // Color of the surface
+    vec3 color;
+
+    // Roughness of the surface
+    float roughness;
+    
+    // The color of the light emited by this material
+    vec3 emissionColor;
+
+    // The strength of the light emited by this material
+    float emissionStrength;
+
+    // How metallic the surface is
+    float metallic;
+
+    // How reflective this material is
+    float reflectiveness;
+    
+    // Transparency of the surface (0 - opaque, 1 - transparent)
+    float transparency;
+
+    // Index of refraction of transparent materials
+    float refractionIndex;          
+};
+
+*/

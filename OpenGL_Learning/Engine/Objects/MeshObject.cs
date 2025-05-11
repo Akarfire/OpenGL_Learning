@@ -11,7 +11,7 @@ namespace OpenGL_Learning.Engine.Objects
     public class MeshObject : GameWorldObject
     {
         // Mesh data
-        protected MeshData meshData = null;
+        public MeshData meshData { get; protected set; } = null;
 
         // Textures
         Texture[] textures = new Texture[0];
@@ -105,6 +105,12 @@ namespace OpenGL_Learning.Engine.Objects
             scaleMatrix = Matrix4.CreateScale(scale);
 
             transformationsUpdated = true;
+        }
+
+        // Returns the model matrix of the object
+        public Matrix4 GetModelMatrix()
+        {
+            return scaleMatrix * rotationMatrix * locationMatrix; ;
         }
     }
 }

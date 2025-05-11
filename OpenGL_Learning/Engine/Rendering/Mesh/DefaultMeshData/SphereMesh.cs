@@ -4,7 +4,7 @@ using System.Security.Principal;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    public class SphereMesh: MeshData
+    public class SphereMesh: RayTracingMeshData
     {
         public SphereMesh(int sectorCount = 36, int stackCount = 18, float radius = 0.5f) 
         {

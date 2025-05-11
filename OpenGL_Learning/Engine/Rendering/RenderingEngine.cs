@@ -17,7 +17,10 @@ namespace OpenGL_Learning.Engine.Rendering
         public abstract void SetUp();
 
         // Called everyframe to render the scene
-        public abstract void Render();
+        public abstract void Render(float deltaTime);
 
+
+        // Called every time camera moves
+        public virtual void OnCameraMoved() { }
     }
 }

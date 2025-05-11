@@ -107,7 +107,7 @@ namespace OpenGL_Learning.Engine.Objects.Player
         {
             base.OnTransformationUpdated();
 
-            engine.ResetRayTracingAccumulation();
+            engine.renderingEngine.OnCameraMoved();
         }
     }
 }

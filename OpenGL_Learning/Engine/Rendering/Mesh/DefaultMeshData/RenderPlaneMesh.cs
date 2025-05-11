@@ -3,7 +3,7 @@ using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    public class RenderPlaneMesh: MeshData
+    public class RenderPlaneMesh: RayTracingMeshData
     {
         public RenderPlaneMesh()
         {

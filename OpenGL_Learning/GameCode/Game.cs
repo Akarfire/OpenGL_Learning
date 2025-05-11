@@ -5,6 +5,7 @@ using OpenGL_Learning.Engine.Scripts.EngineScripts;
 using OpenGL_Learning.Engine.Rendering.Shaders;
 using OpenTK.Mathematics;
 using OpenGL_Learning.Engine.Objects;
+using OpenGL_Learning.Engine.Rendering.RenderEngines;
 
 
 namespace GameCode
@@ -20,6 +21,13 @@ namespace GameCode
 
         public Game()
         {
+            // Rendering engine setup
+            RasterRenderEngine renderEngine = new RasterRenderEngine(engine);
+            engine.renderingEngine = renderEngine;
+
+            renderEngine.postProcessApplicationShaderName = "Fog_PPS";
+
+
             // Loading meshes
             engine.AddMeshData("Cube_M", new CubeMesh());
             engine.AddMeshData("Sphere_M", new SphereMesh());
@@ -41,8 +49,8 @@ namespace GameCode
 
 
             // Enabling post processing
-            engine.renderingMethod = RenderingMethod.RasterWithPostProcessing;
-            engine.postProcessShader = "Fog_PPS";
+            //engine.renderingMethod = RenderingMethod.RasterWithPostProcessing;
+            //engine.postProcessShader = "Fog_PPS";
 
             // Creating world and objects
             World world = engine.CreateWorld("MyWorld");

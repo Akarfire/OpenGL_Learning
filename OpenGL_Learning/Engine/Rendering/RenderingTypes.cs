@@ -58,4 +58,76 @@ namespace OpenGL_Learning.Engine.Rendering
         public float softness;
     }
 
+
+    // Contains data about surface material
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Material
+    {
+        // Color of the surface
+        public Vector3 color = Vector3.Zero;
+
+        // Roughness of the surface
+        public float roughness = 0.5f;
+
+
+        // The strength of the light emited by this material
+        public float emissionStrength = 0;
+
+
+        // How metallic the surface is
+        public float metallic = 0;
+
+
+
+        // Transparency of the surface (0 - opaque, 1 - transparent)
+        public float transparency = 0;
+
+        // Index of refraction of transparent materials
+        public float refractionIndex = 1;
+
+        public Material() { }
+    }
+
+
+    // Contains data about a single triangle
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RenderTriangle
+    {
+        public Vector3 v1; public float normalX;
+        public Vector3 v2; public float normalY;
+        public Vector3 v3; public float normalZ;
+    };
+
+
+    // Contains data about a single object
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ObjectData
+    {
+        // Material ID that will be applied to all triangles of this object
+        public int materialID;
+
+        // Range of indices of trinagles, that belong to this object
+        public int trianglesStart;
+        public int trianglesEndOffset;
+
+        int pad;
+    };
+
+
+    // Constains data about a single BVH node
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BVH_Node
+    {
+        /*
+        Center and extent are used for collision testing the boudning box
+
+        lIndex and rIndex can mean two things:
+            * If they are positive: they are pointing to the child nodes (as offsets from the root)
+            * If they are negative: their absolute values mean: start and endOffset of the corresponding trianlges (LEAF CASE)
+        */
+
+        public Vector3 center; public int lIndex;
+        public Vector3 extent; public int rIndex;
+    }
+
 }

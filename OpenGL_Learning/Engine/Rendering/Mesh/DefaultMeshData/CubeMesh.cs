@@ -3,7 +3,7 @@ using OpenTK.Mathematics;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    public class CubeMesh: MeshData
+    public class CubeMesh: RayTracingMeshData
     {
         public CubeMesh() 
         {

@@ -48,6 +48,8 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
         public NormalCalculationParams() {}
     }
 
+
+
     public class MeshData
     {
         // Mesh data lists

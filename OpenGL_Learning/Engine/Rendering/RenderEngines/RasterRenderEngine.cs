@@ -21,9 +21,9 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
 
         // Post processing
-        string postProcessApplicationShaderName = "";
+        public string postProcessApplicationShaderName = "";
 
-        // TO DO: Post Prcocessing stack of compute shaders
+        // TO DO: Post Processing stack of compute shaders
 
 
         public RasterRenderEngine(Engine inEngine): base(inEngine) { }
@@ -93,7 +93,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
 
         // Called everyframe to render the scene
-        public override void Render() 
+        public override void Render(float deltaTime) 
         {
             // Binding frame buffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
@@ -131,7 +131,6 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
                 shader.StopUsingShader();
             }
 
-
             // RENDERING WORLD
 
             World world = engine.currentWorld;
@@ -158,6 +157,19 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
             // Transparent - second
             foreach (var t in transparent) t.obj.Render(world.worldCamera);
+
+
+            // DRAWING RENDER PLANE
+
+            // Back to screen rendering
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+            // Clearing old stuff on screen
+            GL.ClearColor(0.0f, 0.0f, 0f, 1f);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // Rendering render plane to screen
+            renderPlane.Render(world.worldCamera);
         }
     }
 }

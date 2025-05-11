@@ -2,20 +2,12 @@
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Graphics.OpenGL4;
 using OpenGL_Learning.Engine.Rendering;
-using OpenTK.Mathematics;
-using OpenGL_Learning.Engine.Rendering.DefaultMeshData;
-using OpenGL_Learning.Engine.Objects;
-using System.Runtime.InteropServices;
-using OpenGL_Learning.Engine.Objects.Player;
-using OpenTK.Graphics;
 using OpenGL_Learning.Engine.Rendering.Shaders;
 using OpenGL_Learning.Engine.Rendering.Mesh;
 
 
 namespace OpenGL_Learning.Engine
 {
-    public enum RenderingMethod { Raster, RasterWithPostProcessing, RayTracing }
-
     public class Engine
     {
         // Modules
@@ -44,32 +36,10 @@ namespace OpenGL_Learning.Engine
         // Files
         public string EngineFilesDirectory { get; private set; } = "../../../Engine/";
 
+
         // Rendering
-        public RenderingMethod renderingMethod = RenderingMethod.Raster;
+        public RenderingEngine renderingEngine;
 
-        // Buffering
-        int framebuffer = -1;
-        Texture sceneColorTexture = null;
-        Texture sceneDepthTexture = null;
-
-        // Post processing
-        public string postProcessShader = "";
-
-        // Ray tracing
-        public string rayTracingComputeShader = "";
-        private int lightsSSBO = 0;
-        private int cameraSSBO = 0;
-        private int meshSSBO = 0;
-
-        // Ray tracing accumulation
-        private int frameCountSinceLastCameraMovement = 0;
-
-        // Plane, to which the scene is going to be rendered (if post processing is enabled)
-        MeshObject renderPlane = null;
-
-
-        // Other cached values
-        int lastFrameNumberOfLights = 0;
 
         // ---------------
 
@@ -79,95 +49,7 @@ namespace OpenGL_Learning.Engine
         // General
         public void StartEngine() 
         {
-            GL.Enable(EnableCap.DepthTest);
-
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-
-            // Post processing setup
-            if (renderingMethod == RenderingMethod.RasterWithPostProcessing)
-            {
-                // Creating a frame buffer
-                framebuffer = GL.GenFramebuffer();
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
-
-                // Binding scene color texture to framebuffer (scene will be rendered here)
-                sceneColorTexture = new Texture(windowWidth, windowHeight);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, sceneColorTexture.textureHandle, 0);
-
-                // Binding scene depth texture to framebuffer
-                sceneDepthTexture = new Texture(windowWidth, windowHeight, TextureType.DepthMap);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, sceneDepthTexture.textureHandle, 0);
-
-                // Modifying depth texture parameters
-                sceneDepthTexture.UseTexture(TextureUnit.Texture0);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureCompareMode, (int)All.None);
-                GL.BindTexture(TextureTarget.Texture2D, 0);
-
-                // Specifying draw/read buffers
-                GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-                GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-
-                // Error checking
-                if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
-                    throw new Exception("ERROR: Failed creating frame buffer");
-
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
-
-                // Registering textures
-                AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
-                AddTexture("ENGINE_SceneDepth_T", sceneDepthTexture);
-
-
-                // Initiating render plane
-                AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
-
-                renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", postProcessShader, new string[] { "ENGINE_SceneColor_T", "ENGINE_SceneDepth_T" });
-            }
-
-
-            // Ray tracing setup
-            else if (renderingMethod == RenderingMethod.RayTracing)
-            {     
-                sceneColorTexture = new Texture(windowWidth, windowHeight, TextureType.ComputeShaderOutput);
-                AddTexture("ENGINE_SceneColor_T", sceneColorTexture);
-
-                // Initiating render plane
-                AddMeshData("ENGINE_RenderPlane_M", new RenderPlaneMesh());
-
-                // Registering default shader
-                AddShader("ENGINE_RayTracingRenderPlane_S", new RenderShader(this,
-                    "../../../Engine/Rendering/Shaders/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.vert",
-                    "../../../Engine/Rendering/Shaders/DefaultShaders/RayTracingRenderPlane/DefaultRayTracingRenderPlaneShader.frag"));
-
-                renderPlane = new MeshObject(this, "ENGINE_RenderPlane_M", "ENGINE_RayTracingRenderPlane_S", new string[] { "ENGINE_SceneColor_T" });
-
-
-                // Generating SSBOs
-
-                // Camera SSBO
-                cameraSSBO = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cameraSSBO);
-
-                CameraData initialCameraData = new CameraData();
-                GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<CameraData>(), ref initialCameraData, BufferUsageHint.DynamicDraw);
-                
-                GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, cameraSSBO); // Binding camera SSBO to "slot" 0
-
-                // Lights SSBO
-                lightsSSBO = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, lightsSSBO);
-
-                List<LightData> initialLightData = new List<LightData>();
-                GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<LightData>() * initialLightData.Count, initialLightData.ToArray(), BufferUsageHint.DynamicDraw);
-
-                GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, lightsSSBO); // Binding light SSBO to "slot" 1
-
-                //meshSSBO = GL.GenBuffer();
-
-            }
+            renderingEngine.SetUp();
 
             // Running the window
             gameWindow.Run();
@@ -220,124 +102,7 @@ namespace OpenGL_Learning.Engine
 
         public void Render(float deltaTime)
         {
-            if (renderingMethod == RenderingMethod.RasterWithPostProcessing)
-            {
-                // Binding frame buffer
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
-            }
-
-
-            // Draw calls for all objects in the scene (used for raster rendering)
-            if (  renderingMethod == RenderingMethod.RasterWithPostProcessing
-                || renderingMethod == RenderingMethod.Raster)
-            {
-                // Clearing old stuff in the frame buffer
-                GL.ClearColor(0.0f, 0.0f, 0f, 1f);
-                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-                if (currentWorld == null) return;
-
-                // Engine-level shader uniforms
-                foreach (var shaderPair in shaders)
-                {
-                    var shader = shaderPair.Value;
-
-                    shader.UseShader();
-
-                    shader.SetUniform("time", currentWorld.time);
-
-                    shader.SetUniform("light_direction", currentWorld.lightDirection);
-                    shader.SetUniform("ambient_light", 0.5f);
-
-                    shader.SetUniform("screen_width", (float)windowWidth);
-                    shader.SetUniform("screen_height", (float)windowHeight);
-
-                    shader.SetUniform("camera_location", currentWorld.worldCamera.location);
-                    shader.SetUniform("camera_vector", currentWorld.worldCamera.forwardVector);
-
-                    shader.SetUniform("view", currentWorld.worldCamera.GetViewMatrix(), true);
-                    shader.SetUniform("projection", currentWorld.worldCamera.GetProjectionMatrix(), true);
-
-                    shader.SetUniform("view_inverse", currentWorld.worldCamera.GetViewMatrix().Inverted(), true);
-                    shader.SetUniform("projection_inverse", currentWorld.worldCamera.GetProjectionMatrix().Inverted(), true);
-
-                    shader.StopUsingShader();
-                }
-
-                // Rendering current world
-                currentWorld.RenderWorld(deltaTime);
-            }
-
-
-            // Rendering with ray tracing
-            else if (renderingMethod == RenderingMethod.RayTracing)
-            {
-                // Dispatching the compute shader
-                ComputeShader rayTracingShader = (ComputeShader)shaders[rayTracingComputeShader];
-
-                // Accumulation logic
-                frameCountSinceLastCameraMovement++;
-
-                // Sending data to SSBOs
-
-                // Camera SSBO
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, cameraSSBO);
-                CameraData cameraData = GetCurrentCameraData();
-                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, Marshal.SizeOf<CameraData>(), ref cameraData);
-
-                // Lights SSBO
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, lightsSSBO);
-
-                List<LightData> lightData = currentWorld.GetLightData();
-
-                /* If number the number of lights has changed since the last frame, then we have to realocate buffer's memory;
-                 * If it didn't change: we can just upload our data to the already allocated memory
-                 */
-                if (lastFrameNumberOfLights == lightData.Count)
-                    GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, Marshal.SizeOf<LightData>() * lightData.Count, lightData.ToArray());
-
-                else
-                    GL.BufferData(BufferTarget.ShaderStorageBuffer, Marshal.SizeOf<LightData>() * lightData.Count, lightData.ToArray(), BufferUsageHint.DynamicDraw);
-
-                lastFrameNumberOfLights = lightData.Count;
-
-                // Binding output image
-                GL.BindImageTexture(0, textures["ENGINE_SceneColor_T"].textureHandle, 0, false, 0, TextureAccess.WriteOnly, SizedInternalFormat.Rgba32f);
-
-
-                rayTracingShader.UseShader();
-
-                // Setting uniforms
-                rayTracingShader.SetUniform("lightCount", lightData.Count);
-                rayTracingShader.SetUniform("frame", frameCountSinceLastCameraMovement);
-
-                // Dispatching compute shader
-                int groupSizeX = 16;
-                int groupSizeY = 16;
-
-                int groupsX = (windowWidth + groupSizeX - 1) / groupSizeX;
-                int groupsY = (windowHeight + groupSizeY - 1) / groupSizeY;
-
-                rayTracingShader.DispatchShader(groupsX, groupsY, MemoryBarrierFlags.ShaderImageAccessBarrierBit);
-
-            }
-
-
-            // Drawing the render plane
-            if (renderingMethod == RenderingMethod.RasterWithPostProcessing
-                 || renderingMethod == RenderingMethod.RayTracing)
-            {
-                // Back to screen rendering
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
-                // Clearing old stuff on screen
-                GL.ClearColor(0.0f, 0.0f, 0f, 1f);
-                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-                // Rendering render plane to screen
-                renderPlane.Render(currentWorld.worldCamera);
-            }
-
+            renderingEngine.Render(deltaTime);
 
             // GPU DEBUGGING
             // ----
@@ -348,30 +113,6 @@ namespace OpenGL_Learning.Engine
             // ----
         }
 
-        CameraData GetCurrentCameraData()
-        {
-            CameraData cameraData = new CameraData();
-
-            if (currentWorld == null) return cameraData;
-            Camera camera = currentWorld.worldCamera;
-
-            // Setting data
-            cameraData.location = camera.location;
-
-            cameraData.forwardVector = camera.forwardVector;
-            cameraData.rightVector = camera.rightVector;
-            cameraData.upVector = camera.upVector;
-
-            cameraData.fieldOfView = MathHelper.DegreesToRadians(camera.fov);
-            cameraData.aspectRatio = (float)windowWidth / windowHeight;
-
-            return cameraData;
-        }
-
-        public void ResetRayTracingAccumulation()
-        {
-            frameCountSinceLastCameraMovement = 0;
-        }
 
         // Window management
 
@@ -442,6 +183,7 @@ namespace OpenGL_Learning.Engine
             textures[textureName].DeleteTexture();
             textures.Remove(textureName);
         }
+
 
         // Creates a new game world
         public World CreateWorld(string worldName) 

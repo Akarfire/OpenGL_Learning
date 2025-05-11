@@ -5,7 +5,7 @@ using OpenGL_Learning.Engine.Rendering.Mesh;
 
 namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 {
-    internal class MeshFromFile: MeshData
+    internal class MeshFromFile: RayTracingMeshData
     {
         public MeshFromFile(string filePath)
         {
