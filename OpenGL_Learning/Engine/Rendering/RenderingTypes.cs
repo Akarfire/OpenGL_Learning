@@ -107,27 +107,28 @@ namespace OpenGL_Learning.Engine.Rendering
         public int materialID;
 
         // Range of indices of trinagles, that belong to this object
-        public int trianglesStart;
-        public int trianglesEndOffset;
+        public int bvhStart;
 
-        int pad;
+        public int trianglesStart;
+
+        int pad_2;
     };
 
 
     // Constains data about a single BVH node
     [StructLayout(LayoutKind.Sequential)]
-    public struct BVH_Node
+    public struct BVHNode
     {
         /*
-        Center and extent are used for collision testing the boudning box
+        minExtent and maxExtent are used for collision testing the boudning box
 
         lIndex and rIndex can mean two things:
             * If they are positive: they are pointing to the child nodes (as offsets from the root)
             * If they are negative: their absolute values mean: start and endOffset of the corresponding trianlges (LEAF CASE)
         */
 
-        public Vector3 center; public int lIndex;
-        public Vector3 extent; public int rIndex;
+        public Vector3 minExtent; public int lIndex;
+        public Vector3 maxExtent; public int rIndex;
     }
 
 }

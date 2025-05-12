@@ -38,6 +38,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         private int materialSSBO = 0;
 
         private int objectSSBO = 0;
+        private int bvhSSBO = 0;
         private int triangleSSBO = 0;
 
         // Ray tracing accumulation
@@ -48,6 +49,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         bool refreshMeshSSBO = false;
 
         ObjectData[] cachedObjectData = null;
+        BVHNode[] cachedBVHTree = null;
         RenderTriangle[] cachedTriangles = null;
 
         // Material storage
@@ -136,6 +138,12 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
 
             // BVH SSBO
+            bvhSSBO = GL.GenBuffer();
+
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, bvhSSBO);
+            GL.BufferData(BufferTarget.ShaderStorageBuffer, cachedBVHTree.Length * Marshal.SizeOf<BVHNode>(), cachedBVHTree, BufferUsageHint.DynamicDraw);
+
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 4, bvhSSBO);
 
 
             // Triangles SSBO
@@ -244,6 +252,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         {
             List<RenderTriangle> triangles = new List<RenderTriangle>();
             List<ObjectData> objects = new List<ObjectData>();
+            List<BVHNode> bvhTree = new List<BVHNode>();
 
             for(int i = 0; i < engine.currentWorld.objects.Count; i++)
             {
@@ -256,11 +265,12 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
                         RayTracingMeshData meshData = (RayTracingMeshData)(meshObject.meshData);
 
                         ObjectData objectData = meshObject.GetRayTracingObjectData();
+                        objectData.bvhStart = bvhTree.Count;
                         objectData.trianglesStart = triangles.Count;
-                        objectData.trianglesEndOffset = meshData.BVH_triangles.Count;
 
                         objects.Add(objectData);
 
+                        bvhTree.AddRange(meshData.BVH_tree);
 
                         List<RenderTriangle> tris = meshData.BVH_triangles;
 
@@ -287,6 +297,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
                     }
             }
 
+            cachedBVHTree = bvhTree.ToArray();
             cachedObjectData = objects.ToArray();
             cachedTriangles = triangles.ToArray();
         }

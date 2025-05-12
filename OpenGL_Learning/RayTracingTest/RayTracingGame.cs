@@ -39,7 +39,7 @@ namespace RayTracingTest
 
             // Meshes
             engine.AddMeshData("Cube_Mesh", new CubeMesh());
-            engine.AddMeshData("Shooter_mesh", new MeshFromFile(modelsFolder + "Zaris_Shooter.fbx"));
+            //engine.AddMeshData("Shooter_mesh", new MeshFromFile(modelsFolder + "Zaris_Shooter.fbx"));
 
             // Materials
             Material mat_1 = new Material();
@@ -82,10 +82,10 @@ namespace RayTracingTest
             MeshObject cube = new RayTracingMeshObject(engine, "Cube_Mesh");
             world.AddObject(cube);
 
-            MeshObject cube2 = new RayTracingMeshObject(engine, "Cube_Mesh");
-            world.AddObject(cube2);
+            //MeshObject cube2 = new RayTracingMeshObject(engine, "Cube_Mesh");
+            //world.AddObject(cube2);
 
-            cube2.AddLocation(Vector3.UnitX * 5);
+            //cube2.AddLocation(Vector3.UnitX * 5);
 
             //// Shooter
             //MeshObject shooter = new MeshObject(engine, "Shooter_mesh");

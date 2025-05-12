@@ -117,26 +117,27 @@ struct Object
     int materialID;
 
     // Range of indices of trinagles, that belong to this object
-    int trianglesStart;
-    int trianglesEndOffset;
-
-    int pad;
+    int bvhStart;
+    
+    int trinaglesStart;
+    
+    int pad_2;
 };
 
 // Constains data about a single BVH node
-struct BVH_Node
+struct BVHNode
 {
     /*
-    Center and extent are used for collision testing the boudning box
+    minExtent and maxExtent are used for collision testing the boudning box
 
     lIndex and rIndex can mean two things:
         * If they are positive: they are pointing to the child nodes (as offsets from the root)
         * If they are negative: their absolute values mean: start and endOffset of the corresponding trianlges (LEAF CASE)
     */
 
-    vec3 center;        int lIndex;
-    vec3 extent;        int rIndex;
-}
+    vec3 minExtent;        int lIndex;
+    vec3 maxExtent;        int rIndex;
+};
 
 
 
@@ -200,7 +201,7 @@ layout(std430, binding = 3) buffer ObjectBuffer
 // BVH SSBO
 layout(std430, binding = 4) buffer BVH_Buffer 
 {
-    BCH_Node bvh[];
+    BVHNode bvhTree[];
 };
 
 // Triangles SSBO
@@ -398,7 +399,8 @@ bool RayCheckTriangle(out Hit hit, Triangle tri, Ray ray)
         return false;
 
     float t = f * dot(edge2, q);
-    if (t > EPSILON) {
+    if (t > EPSILON) 
+    {
         // Ray intersection
         hit.distance = t;
         hit.location = ray.origin + ray.direction * t;
@@ -410,6 +412,77 @@ bool RayCheckTriangle(out Hit hit, Triangle tri, Ray ray)
     return false;
 }
 
+// BVH ray collision check
+bool RayCheckBVHNode(vec3 origin, vec3 invDirection, vec3 minExtent, vec3 maxExtent)
+{
+    vec3 t1 = (minExtent - origin) * invDirection;
+    vec3 t2 = (maxExtent - origin) * invDirection;
+
+    vec3 tMinVec = min(t1, t2);
+    vec3 tMaxVec = max(t1, t2);
+
+    float tMin = max(max(tMinVec.x, tMinVec.y), tMinVec.z);
+    float tMax = min(min(tMaxVec.x, tMaxVec.y), tMaxVec.z);
+
+    return tMax >= max(tMin, 0.0);
+}
+
+// Traverses the bvh tree and checks for collisions
+bool RayCheckBVH(out Hit outHit, Ray ray, int bvhStart)
+{
+    // Precomputing
+    vec3 invDirection = 1 / ray.direction;
+
+    outHit.distance = 1e20;
+    bool didHit = false;
+
+    const int MAX_STACK_SIZE = 64;
+    int stack[MAX_STACK_SIZE];
+    int stackPtr = 0;
+
+    stack[stackPtr++] = bvhStart; // root node index
+
+
+    while (stackPtr > 0) 
+    {
+        int nodeIndex = stack[--stackPtr];
+        BVHNode node = bvhTree[nodeIndex];
+
+        if (!RayCheckBVHNode(ray.origin, invDirection, node.minExtent, node.maxExtent))
+            continue;
+
+        if (node.lIndex < 0) 
+        {
+            // Leaf node — check triangles
+            for (int i = 0; i < -1 * node.rIndex; i++) 
+            {
+                Triangle tri = triangles[-1 * node.lIndex + i];
+
+                Hit tempHit;
+                if (RayCheckTriangle(tempHit, tri, ray)) 
+                {
+                    if (tempHit.distance < outHit.distance) 
+                    {
+                        outHit = tempHit;
+                        didHit = true;
+                    }
+                }
+            }
+        } 
+        
+        else 
+        {
+            if (stackPtr + 2 >= MAX_STACK_SIZE) { break; }
+
+            // Push children to the stack
+            stack[stackPtr++] = bvhStart + node.lIndex;
+            stack[stackPtr++] = bvhStart + node.rIndex;
+        }
+    }
+
+    return didHit;
+}
+
 
 // -----------
 // Ray Casting
@@ -418,9 +491,6 @@ bool RayCheckTriangle(out Hit hit, Triangle tri, Ray ray)
 // Casts a ray and returns true, if the ray hit something, puts hit result data into outHit
 bool CastRay(out Hit outHit, Ray ray)
 {
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // TO DO: Replace spheres with actual geometry from BVH
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Triangle tri;
     // tri.v1 = vec3(0);
@@ -438,15 +508,23 @@ bool CastRay(out Hit outHit, Ray ray)
 
     for (int i = 0; i < objects.length(); i++)
     {
-        for (int j = objects[i].trianglesStart; j < objects[i].trianglesStart + objects[i].trianglesEndOffset; j++)
-        {
-            Hit localHit;
-            localHit.materialID = objects[i].materialID;
+        // for (int j = objects[i].trianglesStart; j < objects[i].trianglesStart + objects[i].trianglesEndOffset; j++)
+        // {
+        //     Hit localHit;
+        //     localHit.materialID = objects[i].materialID;
 
-            if (RayCheckTriangle(localHit, triangles[j], ray))
-            {
-                closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
-            }
+        //     if (RayCheckTriangle(localHit, triangles[j], ray))
+        //     {
+        //         closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+        //     }
+        // }
+
+        Hit localHit;
+        localHit.materialID = objects[i].materialID;
+
+        if (RayCheckBVH(localHit, ray, objects[i].bvhStart))
+        {
+            closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
         }
     }
 
