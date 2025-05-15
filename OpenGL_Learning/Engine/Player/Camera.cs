@@ -73,7 +73,7 @@ namespace OpenGL_Learning.Engine.Objects.Player
                 lastMousePosition.Y = mouseInput.Y;
 
                 if (deltaX != 0 || deltaY != 0)
-                    AddRotation(new Vector3(0, deltaX * sensitivity * deltaTime, -1 * deltaY * sensitivity * deltaTime));
+                    AddRotation(new Vector3(0, deltaX * sensitivity * 1 / 60, -1 * deltaY * sensitivity * 1 / 60));
 
                 // Clamping pitch
                 Vector3 clampedRotation = rotation;

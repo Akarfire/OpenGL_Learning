@@ -509,4 +509,109 @@ struct Material
     float refractionIndex;          
 };
 
+
+
+// Triangle tri;
+    // tri.v1 = vec3(0);
+    // tri.v2 = vec3(0, 1, 0);
+    // tri.v3 = vec3(0, 0.5, 1);
+    // tri.normalX = 1;
+    // tri.normalY = 0;
+    // tri.normalZ = 0;
+
+    // Triangle triangles[1] = Triangle[](tri);
+
+    // //Looping over all of the primitives and getting the closest hit
+    // Hit closestHit;
+    // closestHit.distance = ray.distance;
+
+    // for (int i = 0; i < triangles.length(); i++)
+    // {
+    //     Hit localHit;
+    //     if (RayCheckTriangle(localHit, triangles[i], ray))
+    //     {
+    //         closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+    //     }
+    // }
+
+    // outHit = closestHit;
+
+    // return closestHit.distance < ray.distance;
+
+
+
+    // // for (int i = 0; i < triangleCount; i++)
+    // // {
+    // //     Hit localHit;
+
+    // //     if (RayCheckTriangle(localHit, triangles[i], ray))
+    // //     {
+    // //         closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+    // //     }
+    // // }
+
+    // for (int i = 0; i < bvhCount; i++)
+    // {
+    //     Hit localHit;
+
+    //     if (RayCheckBVHNode(ray.origin, 1 / ray.direction, bvhTree[i].minExtent, bvhTree[i].maxExtent))
+    //     {
+    //         outHit = closestHit;
+    //         outHit.materialID = 2;
+    //         return true;
+    //     }
+    // }
+
+    // return false;
+
+    // outHit = closestHit;
+    // outHit.materialID = 2;
+
+    // return closestHit.distance < ray.distance;
+
+
+
+    // //Sphere example
+    // Sphere sphere1;
+    // sphere1.center = vec3(2, 0, 0);
+    // sphere1.radius = 1;
+    // sphere1.materialID = 1;
+
+    // Sphere sphere2;
+    // sphere2.center = vec3(-3, -3, -3);
+    // sphere2.radius = 6;
+    // sphere2.materialID = 2;
+
+    // Sphere spheres[2] = Sphere[](sphere1, sphere2);
+
+    // // Looping over all of the primitives and getting the closest hit
+    // Hit closestHit;
+    // closestHit.distance = ray.distance;
+
+    // for (int i = 0; i < spheres.length(); i++)
+    // {
+    //     Hit localHit;
+    //     if (RayCheckSphere(localHit, spheres[i], ray))
+    //     {
+    //         closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+    //     }
+    // }
+
+    // outHit = closestHit;
+    // return closestHit.distance < ray.distance;
+
+
+    // // Looping over all of the primitives and getting the closest hit
+    // Hit closestHit;
+    // closestHit.distance = ray.distance;
+
+    
+    // Hit localHit;
+    // if (RayCheckSphere(localHit, spheres[i], ray))
+    // {
+    //     closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
+    // }
+
+    // outHit = closestHit;
+    // return closestHit.distance < ray.distance;
 */

@@ -83,20 +83,21 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
             rootNode.cachedAverageLocation /= triangles.Count;
 
             // Generating the tree
-            SplitBVHNode(rootNode, false);
+            SplitBVHNode(rootNode, 0);
 
             // Converting the tree into actual data, that will be sent to GPU
             BVH_triangles.Clear();
             BVH_tree.Clear();
 
+            //BVH_triangles = tempTriangles;
             StoreBVHNode(0, rootNode, BVH_tree, BVH_triangles);
         }
 
 
-        private static void SplitBVHNode(BVHNodeGen node, bool xzAxisFlip)
+        private static void SplitBVHNode(BVHNodeGen node, int xzyAxisFlip)
         {
             // Branch end condition
-            if (node.renderTriangles.Count < 10) { node.leaf = true; return; }
+            if (node.renderTriangles.Count < 7) { node.leaf = true; return; }
 
             BVHNodeGen leftNode = new BVHNodeGen();
             BVHNodeGen rightNode = new BVHNodeGen();
@@ -106,8 +107,9 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
 
             foreach (var tri in node.renderTriangles)
             {
-                if ((xzAxisFlip && (tri.v1.Z + tri.v2.Z + tri.v3.Z) / 3 < node.cachedAverageLocation.Z)
-                    || (!xzAxisFlip && (tri.v1.X + tri.v2.X + tri.v3.X) / 3 < node.cachedAverageLocation.X))
+                if (    (xzyAxisFlip == 0 && (tri.v1.Z + tri.v2.Z + tri.v3.Z) / 3 < node.cachedAverageLocation.Z)
+                    ||  (xzyAxisFlip == 1 && (tri.v1.X + tri.v2.X + tri.v3.X) / 3 < node.cachedAverageLocation.X)
+                    ||  (xzyAxisFlip == 2 && (tri.v1.Y + tri.v2.Y + tri.v3.Y) / 3 < node.cachedAverageLocation.Y))
                 {
                     leftNode.renderTriangles.Add(tri);
                     leftNode.cachedAverageLocation += (tri.v1 + tri.v2 + tri.v3) / 3;
@@ -139,8 +141,8 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
             leftNode.cachedAverageLocation /= leftNode.renderTriangles.Count;
             rightNode.cachedAverageLocation /= rightNode.renderTriangles.Count;
 
-            SplitBVHNode(leftNode, !xzAxisFlip);
-            SplitBVHNode(rightNode, !xzAxisFlip);
+            SplitBVHNode(leftNode, (xzyAxisFlip + 1) % 3);
+            SplitBVHNode(rightNode, (xzyAxisFlip + 1) % 3);
         }
 
         private static int StoreBVHNode(int index, BVHNodeGen node, List<BVHNode> outNodeList, List<RenderTriangle> outTriangleList)
@@ -159,11 +161,11 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
 
                 int tempIndex = StoreBVHNode(index + 1, node.leftChild, outNodeList, outTriangleList);
 
-                storeNode.rIndex = tempIndex + 1;
+                storeNode.rIndex = tempIndex;
 
                 outNodeList[storeNodeIndex] = storeNode; 
 
-                return StoreBVHNode(tempIndex + 1, node.rightChild, outNodeList, outTriangleList);
+                return StoreBVHNode(tempIndex, node.rightChild, outNodeList, outTriangleList);
             }
 
             else

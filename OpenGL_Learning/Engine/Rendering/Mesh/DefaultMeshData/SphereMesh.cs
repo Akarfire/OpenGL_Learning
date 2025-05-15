@@ -56,6 +56,7 @@ namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
             }
 
             normalCalculationParams.enableTriangleNormals = false;
+            normalCalculationParams.autoNormalComputeForVertexNormals = true;
             InitMeshData();
 
             InitMeshData();

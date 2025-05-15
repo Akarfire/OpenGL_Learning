@@ -59,6 +59,11 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
             { "DefaultMaterial", new Material() }
         };
 
+
+        // RUNTIME PARAMETERS
+        public int RayCount { get; set; } = 1;
+        public int MaxBounces { get; set; } = 2;
+
         // ----
 
         public RayTracingRenderEngine(Engine inEngine) : base(inEngine) { }
@@ -165,6 +170,36 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         // Called everyframe to render the scene
         public override void Render(float deltaTime)
         {
+
+            // Engine-level shader uniforms
+            foreach (var shaderPair in engine.shaders)
+            {
+                var shader = shaderPair.Value;
+
+                shader.UseShader();
+
+                shader.SetUniform("time", engine.currentWorld.time);
+
+                shader.SetUniform("light_direction", engine.currentWorld.lightDirection);
+                shader.SetUniform("ambient_light", 0.5f);
+
+                shader.SetUniform("screen_width", (float)engine.windowWidth);
+                shader.SetUniform("screen_height", (float)engine.windowHeight);
+
+                shader.SetUniform("camera_location", engine.currentWorld.worldCamera.location);
+                shader.SetUniform("camera_vector", engine.currentWorld.worldCamera.forwardVector);
+
+                shader.SetUniform("view", engine.currentWorld.worldCamera.GetViewMatrix(), true);
+                shader.SetUniform("projection", engine.currentWorld.worldCamera.GetProjectionMatrix(), true);
+
+                shader.SetUniform("view_inverse", engine.currentWorld.worldCamera.GetViewMatrix().Inverted(), true);
+                shader.SetUniform("projection_inverse", engine.currentWorld.worldCamera.GetProjectionMatrix().Inverted(), true);
+
+                shader.StopUsingShader();
+            }
+
+
+            // Ray tracing
             ComputeShader rayTracingShader = (ComputeShader)engine.shaders[rayTracingComputeShader];
 
             // Accumulation logic
@@ -201,11 +236,22 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
             // Setting uniforms
             rayTracingShader.SetUniform("lightCount", lightData.Count);
+            rayTracingShader.SetUniform("objectCount", cachedObjectData.Length);
+            rayTracingShader.SetUniform("bvhCount", cachedBVHTree.Length);
+            rayTracingShader.SetUniform("triangleCount", cachedTriangles.Length);
+
             rayTracingShader.SetUniform("frame", frameCountSinceLastCameraMovement);
 
+            rayTracingShader.SetUniform("rayCount", RayCount);
+            rayTracingShader.SetUniform("maxBounces", MaxBounces);
+
+            rayTracingShader.SetUniform("screen_width", (float)engine.windowWidth);
+            rayTracingShader.SetUniform("screen_height", (float)engine.windowHeight);
+
+
             // Dispatching compute shader
-            int groupSizeX = 16;
-            int groupSizeY = 16;
+            int groupSizeX = 8;
+            int groupSizeY = 8;
 
             int groupsX = (engine.windowWidth + groupSizeX - 1) / groupSizeX;
             int groupsY = (engine.windowHeight + groupSizeY - 1) / groupSizeY;
@@ -258,23 +304,50 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
             {
                 GameObject obj = engine.currentWorld.objects[i];
                 if (obj is RayTracingMeshObject)
-                    if (((RayTracingMeshObject)obj).meshData is RayTracingMeshData)
+                    if ( ((RayTracingMeshObject)obj).meshData is RayTracingMeshData )
                     {
+
+                        // Casting
                         RayTracingMeshObject meshObject = ((RayTracingMeshObject)obj);
 
                         RayTracingMeshData meshData = (RayTracingMeshData)(meshObject.meshData);
 
                         ObjectData objectData = meshObject.GetRayTracingObjectData();
+
+
+                        // Object data
                         objectData.bvhStart = bvhTree.Count;
                         objectData.trianglesStart = triangles.Count;
+                        //.bvhStart = meshData.BVH_triangles.Count;
 
                         objects.Add(objectData);
 
-                        bvhTree.AddRange(meshData.BVH_tree);
 
-                        List<RenderTriangle> tris = meshData.BVH_triangles;
+                        // BVH
 
                         Matrix4 model = meshObject.GetModelMatrix();
+
+                        // Aplying model matrix to the BVH node extents
+                        List<BVHNode> bvhNodes = meshData.BVH_tree;
+                        
+                        for(int j = 0; j < bvhNodes.Count; j++)
+                        {
+                            BVHNode node = bvhNodes[j];
+
+                            node.minExtent = (new Vector4(node.minExtent, 1) * model).Xyz;
+                            node.maxExtent = (new Vector4(node.maxExtent, 1) * model).Xyz;
+
+                            bvhNodes[j] = node;
+                        }
+
+                        bvhTree.AddRange(bvhNodes);
+
+
+                        // Triangles
+
+                        // Applying model matrix to the triangles
+                        List<RenderTriangle> tris = meshData.BVH_triangles;
+                        
                         for (int j = 0; j < tris.Count; j++)
                         {
                             RenderTriangle triangle = tris[j];

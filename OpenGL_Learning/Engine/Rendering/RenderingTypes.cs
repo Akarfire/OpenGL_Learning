@@ -131,4 +131,22 @@ namespace OpenGL_Learning.Engine.Rendering
         public Vector3 maxExtent; public int rIndex;
     }
 
+    //// Constains data about a single BVH node
+    //[StructLayout(LayoutKind.Sequential)]
+    //public struct BVHNode
+    //{
+    //    /*
+    //    minExtent and maxExtent are used for collision testing the boudning box
+    //    */
+
+    //    public Vector3 minExtent; public int lChildIndex;
+    //    public Vector3 maxExtent; public int rChildIndex;
+
+    //    public int nextNode;
+    //    public int triangleStart;
+    //    public int triangleCount;
+    //    public int isLeaf;
+    //};
+
+
 }

@@ -4,6 +4,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenGL_Learning.Engine.Rendering;
 using OpenGL_Learning.Engine.Rendering.Shaders;
 using OpenGL_Learning.Engine.Rendering.Mesh;
+using OpenTK.Mathematics;
 
 
 namespace OpenGL_Learning.Engine
@@ -21,8 +22,8 @@ namespace OpenGL_Learning.Engine
 
 
         // Window settings
-        public int windowWidth { get; private set; } = 2160;
-        public int windowHeight { get; private set; } = 1080;
+        public int windowWidth { get; set; } = 2160;
+        public int windowHeight { get; set; } = 1080;
 
         public bool cursorGrabbed { get; private set; } = false;
 
@@ -49,6 +50,8 @@ namespace OpenGL_Learning.Engine
         // General
         public void StartEngine() 
         {
+            gameWindow.Size = new Vector2i(windowWidth, windowHeight);
+
             renderingEngine.SetUp();
 
             // Running the window
@@ -102,6 +105,9 @@ namespace OpenGL_Learning.Engine
 
         public void Render(float deltaTime)
         {
+            Console.Clear();
+            Console.WriteLine(1 / deltaTime);
+
             renderingEngine.Render(deltaTime);
 
             // GPU DEBUGGING
