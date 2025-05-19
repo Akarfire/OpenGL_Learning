@@ -8,31 +8,39 @@ namespace RayTracingTest
 {
     public class RenderController: GameObject, InputInterface
     {
-        public RenderController(Engine inEngine) : base(inEngine) { }
+        public RenderController(Engine inEngine) : base(inEngine)
+        {
+            previewMode();
+        }
 
 
         public void onUpdateInput(float deltaTime, KeyboardState keyboardState, MouseState mouseState)
         {
-            if (keyboardState.IsKeyDown(Keys.R) && !keyboardState.IsKeyDown(Keys.LeftControl))
-            {
-                if (engine.renderingEngine is RayTracingRenderEngine)
-                {
-                    ((RayTracingRenderEngine)engine.renderingEngine).RayCount = 15;
-                    ((RayTracingRenderEngine)engine.renderingEngine).MaxBounces = 5;
+            if (keyboardState.IsKeyDown(Keys.R) && !keyboardState.IsKeyDown(Keys.LeftControl)) renderMode();
 
-                    ((RayTracingRenderEngine)engine.renderingEngine).OnCameraMoved();
-                }
+            if (keyboardState.IsKeyDown(Keys.R) && keyboardState.IsKeyDown(Keys.LeftControl)) previewMode();
+        }
+
+
+        private void previewMode()
+        {
+            if (engine.renderingEngine is RayTracingRenderEngine)
+            {
+                ((RayTracingRenderEngine)engine.renderingEngine).RayCount = 1;
+                ((RayTracingRenderEngine)engine.renderingEngine).MaxBounces = 4;
+
+                ((RayTracingRenderEngine)engine.renderingEngine).OnCameraMoved();
             }
+        }
 
-            if (keyboardState.IsKeyDown(Keys.R) && keyboardState.IsKeyDown(Keys.LeftControl))
+        private void renderMode()
+        {
+            if (engine.renderingEngine is RayTracingRenderEngine)
             {
-                if (engine.renderingEngine is RayTracingRenderEngine)
-                {
-                    ((RayTracingRenderEngine)engine.renderingEngine).RayCount = 1;
-                    ((RayTracingRenderEngine)engine.renderingEngine).MaxBounces = 2;
+                ((RayTracingRenderEngine)engine.renderingEngine).RayCount = 5;
+                ((RayTracingRenderEngine)engine.renderingEngine).MaxBounces = 8;
 
-                    ((RayTracingRenderEngine)engine.renderingEngine).OnCameraMoved();
-                }
+                ((RayTracingRenderEngine)engine.renderingEngine).OnCameraMoved();
             }
         }
     }

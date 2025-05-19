@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 using OpenGL_Learning.Engine.Objects.Player;
 using OpenGL_Learning.Engine.Rendering.Mesh;
 using OpenGL_Learning.Engine.Rendering;
+using System.Collections.Generic;
+using OpenGL_Learning.Engine.Objects.GeneralPrimitives;
 
 
 namespace OpenGL_Learning.Engine.Rendering.RenderEngines
@@ -41,6 +43,8 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         private int bvhSSBO = 0;
         private int triangleSSBO = 0;
 
+        private int primitiveSSBO = 0;
+
         // Ray tracing accumulation
         private int frameCountSinceLastCameraMovement = 0;
 
@@ -51,6 +55,7 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
         ObjectData[] cachedObjectData = null;
         BVHNode[] cachedBVHTree = null;
         RenderTriangle[] cachedTriangles = null;
+        GeneralPrimitive[] cachedPrimitives = null;
 
         // Material storage
         public Dictionary<string, Material> materials { get; private set; } = new Dictionary<string, Material>()
@@ -161,6 +166,15 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
             GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 5, triangleSSBO);
 
 
+            // PRIMITIVE SSBO
+            primitiveSSBO = GL.GenBuffer();
+
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, primitiveSSBO);
+
+            GL.BufferData(BufferTarget.ShaderStorageBuffer, cachedPrimitives.Length * Marshal.SizeOf<GeneralPrimitive>(), cachedPrimitives, BufferUsageHint.DynamicDraw);
+
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 6, primitiveSSBO);
+
 
             // Error checking
             if (!engine.shaders.ContainsKey(rayTracingComputeShader)) throw new Exception("ERROR: No ray tracing compute shader specified!");
@@ -234,11 +248,12 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
             rayTracingShader.UseShader();
 
-            // Setting uniforms
+            // Setting raytracing shader uniforms
             rayTracingShader.SetUniform("lightCount", lightData.Count);
             rayTracingShader.SetUniform("objectCount", cachedObjectData.Length);
             rayTracingShader.SetUniform("bvhCount", cachedBVHTree.Length);
             rayTracingShader.SetUniform("triangleCount", cachedTriangles.Length);
+            rayTracingShader.SetUniform("primitiveCount", cachedPrimitives.Length);
 
             rayTracingShader.SetUniform("frame", frameCountSinceLastCameraMovement);
 
@@ -300,11 +315,15 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
             List<ObjectData> objects = new List<ObjectData>();
             List<BVHNode> bvhTree = new List<BVHNode>();
 
+            // Primitive data (Not mesh data but is also fetched in this loop)
+            List<GeneralPrimitive> primitives = new List<GeneralPrimitive>();
+
             for(int i = 0; i < engine.currentWorld.objects.Count; i++)
             {
                 GameObject obj = engine.currentWorld.objects[i];
                 if (obj is RayTracingMeshObject)
-                    if ( ((RayTracingMeshObject)obj).meshData is RayTracingMeshData )
+                {
+                    if (((RayTracingMeshObject)obj).meshData is RayTracingMeshData)
                     {
 
                         // Casting
@@ -328,9 +347,9 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
                         Matrix4 model = meshObject.GetModelMatrix();
 
                         // Aplying model matrix to the BVH node extents
-                        List<BVHNode> bvhNodes = meshData.BVH_tree;
-                        
-                        for(int j = 0; j < bvhNodes.Count; j++)
+                        List<BVHNode> bvhNodes = new List<BVHNode>(meshData.BVH_tree);
+
+                        for (int j = 0; j < bvhNodes.Count; j++)
                         {
                             BVHNode node = bvhNodes[j];
 
@@ -346,8 +365,8 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
                         // Triangles
 
                         // Applying model matrix to the triangles
-                        List<RenderTriangle> tris = meshData.BVH_triangles;
-                        
+                        List<RenderTriangle> tris = new List<RenderTriangle>(meshData.BVH_triangles);
+
                         for (int j = 0; j < tris.Count; j++)
                         {
                             RenderTriangle triangle = tris[j];
@@ -368,11 +387,20 @@ namespace OpenGL_Learning.Engine.Rendering.RenderEngines
 
                         triangles.AddRange(tris);
                     }
+                }
+
+                // Processing primitives
+                else if (obj is PrimitiveObject)
+                {
+                    PrimitiveObject primitiveObject = (PrimitiveObject)obj;
+                    primitives.Add(primitiveObject.GetPrimitiveData());
+                }
             }
 
             cachedBVHTree = bvhTree.ToArray();
             cachedObjectData = objects.ToArray();
             cachedTriangles = triangles.ToArray();
+            cachedPrimitives = primitives.ToArray();
         }
 
 

@@ -5,9 +5,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
+using System.Runtime.InteropServices;
 
 namespace OpenGL_Learning.Engine.Rendering.Mesh
 {
+    // Contains data about a single triangle
+    public struct RenderTriangleGen
+    {
+        public Vector3 v1; public float normalX;
+        public Vector3 v2; public float normalY;
+        public Vector3 v3; public float normalZ;
+
+        public int v1Index;
+        public int v2Index;
+        public int v3Index;
+    };
 
     // A structure used in the process of generating a BVH
     internal class BVHNodeGen
@@ -22,7 +34,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
 
         public Vector3 cachedAverageLocation = Vector3.Zero;
 
-        public List<RenderTriangle> renderTriangles = new List<RenderTriangle>();
+        public List<RenderTriangleGen> renderTriangles = new List<RenderTriangleGen>();
 
         public BVHNodeGen() { }
     }
@@ -30,6 +42,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
     public class RayTracingMeshData : MeshData
     {
         public List<RenderTriangle> BVH_triangles { get; protected set; } = new List<RenderTriangle>();
+        public List<Vector3> BVH_vertices { get; protected set; } = new List<Vector3>();
         public List<BVHNode> BVH_tree { get; protected set; } = new List<BVHNode>();
 
 
@@ -42,7 +55,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
         public void GenerateBVH()
         {
 
-            List<RenderTriangle> tempTriangles = new List<RenderTriangle>();
+            List<RenderTriangleGen> tempTriangles = new List<RenderTriangleGen>();
 
             BVHNodeGen rootNode = new BVHNodeGen();
 
@@ -51,7 +64,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
 
                 // Applying model matrix to triangles
                 Triangle triangle = triangles[i];
-                RenderTriangle newTriangle = new RenderTriangle();
+                RenderTriangleGen newTriangle = new RenderTriangleGen();
 
                 newTriangle.v1 = vertices[(int)triangle.v1].position;
                 newTriangle.v2 = vertices[(int)triangle.v2].position;
@@ -90,7 +103,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
             BVH_tree.Clear();
 
             //BVH_triangles = tempTriangles;
-            StoreBVHNode(0, rootNode, BVH_tree, BVH_triangles);
+            StoreBVHNode(0, rootNode, BVH_tree, BVH_triangles, BVH_vertices);
         }
 
 
@@ -145,7 +158,7 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
             SplitBVHNode(rightNode, (xzyAxisFlip + 1) % 3);
         }
 
-        private static int StoreBVHNode(int index, BVHNodeGen node, List<BVHNode> outNodeList, List<RenderTriangle> outTriangleList)
+        private static int StoreBVHNode(int index, BVHNodeGen node, List<BVHNode> outNodeList, List<RenderTriangle> outTriangleList, List<Vector3> outVertexList)
         {
             BVHNode storeNode = new BVHNode();
 
@@ -159,13 +172,13 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
 
                 storeNode.lIndex = index + 1;
 
-                int tempIndex = StoreBVHNode(index + 1, node.leftChild, outNodeList, outTriangleList);
+                int tempIndex = StoreBVHNode(index + 1, node.leftChild, outNodeList, outTriangleList, outVertexList);
 
                 storeNode.rIndex = tempIndex;
 
                 outNodeList[storeNodeIndex] = storeNode; 
 
-                return StoreBVHNode(tempIndex, node.rightChild, outNodeList, outTriangleList);
+                return StoreBVHNode(tempIndex, node.rightChild, outNodeList, outTriangleList, outVertexList);
             }
 
             else
@@ -173,7 +186,23 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
                 storeNode.lIndex = outTriangleList.Count;
                 storeNode.rIndex = node.renderTriangles.Count;
 
-                foreach( var triangle in node.renderTriangles) { outTriangleList.Add(triangle); }
+                foreach( var triangle in node.renderTriangles) 
+                {
+                    RenderTriangle tri = new RenderTriangle();
+                    tri.v1 = triangle.v1;
+                    tri.v2 = triangle.v2;
+                    tri.v3 = triangle.v3;
+
+                    //tri.v1Index = outVertexList.Count;
+                    //tri.v2Index = outVertexList.Count + 1;
+                    //tri.v3Index = outVertexList.Count + 2;
+
+                    outTriangleList.Add(tri);
+
+                    outVertexList.Add(triangle.v1);
+                    outVertexList.Add(triangle.v2);
+                    outVertexList.Add(triangle.v3);
+                }
 
                 storeNode.lIndex *= -1;
                 storeNode.rIndex *= -1;

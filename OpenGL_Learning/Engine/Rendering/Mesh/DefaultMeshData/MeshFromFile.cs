@@ -30,7 +30,8 @@ namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
 
                 foreach (var tri in mesh.Faces)
                 {
-                    triangles.Add(new Triangle((uint)tri.Indices[0], (uint)tri.Indices[1], (uint)tri.Indices[2]));
+                    triangles.Add(new Triangle((uint)tri.Indices[0], (uint)tri.Indices[1], (uint)tri.Indices[2], 
+                        (vertices[tri.Indices[0]].normal + vertices[tri.Indices[1]].normal + vertices[tri.Indices[2]].normal) / 3));
                 }
             }
 

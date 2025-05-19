@@ -1,9 +1,5 @@
 #version 460 core
 
-// // Whether general primitives from the primitive buffer (bind 6) like spheres need to be rendered (disabling can increase perfomance)
-// #define TRACE_PRIMITIVES 1
-
-
 // =====================
 // INPUT DATA STRUCTURES
 // =====================
@@ -148,29 +144,24 @@ struct BVHNode
     vec3 maxExtent;        int rIndex;
 };
 
+// // Constains data about a single BVH node
+// struct BVHNode
+// {
+//     /*
+//     minExtent and maxExtent are used for collision testing the boudning box
+//     */
 
-/* A strucuture containing data about a generalized primitive
- * Based on the type, the primitive can be interpreted to be:
- *          0 - sphere;
- *          1 - axis alligned cube;
- *
- * P.S. Can be expanded to support more primitive types
- */
-struct GeneralPrimitive
-{
-    vec3 vecOne; 
-    float scalar;
+//     vec3 minExtent;       int lChildIndex; 
+//     vec3 maxExtent;       int rChildIndex;
 
-    vec3 vecTwo;
+//     int nextNode;
+//     int triangleStart;
+//     int triangleCount;
+//     int isLeaf;      
+// };
 
-    // ID of the primitive's material
-    int materialID;
 
-    vec3 vecThree;
 
-    // Type of the primitive: 0 - sphere, 1 - axis alligned cube
-    int type;
-};
 
 
 
@@ -252,14 +243,6 @@ layout(std430, binding = 5) buffer TriangleBuffer
 };
 
 
-// PRIMITIVE SSBO
-
-uniform int primitiveCount;
-
-layout(std430, binding = 6) buffer PrimitiveBuffer
-{
-    GeneralPrimitive primitives[];
-};
 
 
 
@@ -295,9 +278,6 @@ struct Ray
 // Contains data about a hit of the ray
 struct Hit
 {
-    // Whether the ray collided with geometry or not
-    bool didHit;
-
     // Id of the object, that was hit
     int objectID;
 
@@ -312,6 +292,23 @@ struct Hit
 
     // Surface normal in the hit location
     vec3 normal;
+};
+
+// ------
+// Sphere
+// ------
+
+// Contains data about a primitive sphere
+struct Sphere
+{
+    // Location of the sphere's center
+    vec3 center;
+
+    // Radius of the sphere
+    float radius;
+
+    // ID of sphere's material
+    int materialID;
 };
 
 
@@ -379,22 +376,19 @@ vec3 randomHemisphere(vec3 normal, inout uint randomState)
 // --------------------
 
 // Sphere ray collision check
-Hit RayCheckSphere(int primitiveID, Ray ray)
+bool RayCheckSphere(out Hit outHit, Sphere sphere, Ray ray)
 {
-    Hit outHit;
-    outHit.didHit = false;
-
-    vec3 oc = ray.origin - primitives[primitiveID].vecOne;
+    vec3 oc = ray.origin - sphere.center;
 
     float a = dot(ray.direction, ray.direction);
     float b = 2.0 * dot(oc, ray.direction);
-    float c = dot(oc, oc) - primitives[primitiveID].scalar * primitives[primitiveID].scalar;
+    float c = dot(oc, oc) - sphere.radius * sphere.radius;
 
     float discriminant = b * b - 4.0 * a * c;
 
     if (discriminant < 0.0) 
     {
-        return outHit; // no intersection
+        return false; // no intersection
     }
 
     float sqrtDisc = sqrt(discriminant);
@@ -404,21 +398,17 @@ Hit RayCheckSphere(int primitiveID, Ray ray)
     float t1 = (-b + sqrtDisc) / (2.0 * a);
 
     outHit.distance = (t0 > 0.0) ? t0 : t1;
-    outHit.didHit = outHit.distance > 0.0;
     outHit.location = ray.origin + ray.direction * outHit.distance;
-    outHit.normal = normalize(outHit.location - primitives[primitiveID].vecOne);
+    outHit.normal = normalize(outHit.location - sphere.center);
 
-    outHit.materialID = primitives[primitiveID].materialID;
+    outHit.materialID = sphere.materialID;
 
-    return outHit;
+    return outHit.distance > 0.0;
 }
 
 // Triangle ray collision check
-Hit RayCheckTriangle(int triID, Ray ray) 
+bool RayCheckTriangle(out Hit hit, int triID, Ray ray) 
 {
-    Hit outHit;
-    outHit.didHit = false;
-
     const float EPSILON = 1e-6;
 
     vec3 v1 = triangles[triID].v1;
@@ -429,31 +419,32 @@ Hit RayCheckTriangle(int triID, Ray ray)
     vec3 h = cross(ray.direction, edge2);
     float a = dot(edge1, h);
     if (abs(a) < EPSILON)
-        return outHit; // Ray is parallel to triangle
+        return false; // Ray is parallel to triangle
 
     float f = 1.0 / a;
     vec3 s = ray.origin - v1;
     float u = f * dot(s, h);
     if (u < 0.0 || u > 1.0)
-        return outHit;
+        return false;
 
     vec3 q = cross(s, edge1);
     float v = f * dot(ray.direction, q);
     if (v < 0.0 || u + v > 1.0)
-        return outHit;
+        return false;
 
     float t = f * dot(edge2, q);
+    if (t > EPSILON) 
+    {
+        // Ray intersection
+        hit.distance = t;
+        hit.location = ray.origin + ray.direction * t;
 
-    // Ray intersection
-    outHit.didHit = t > EPSILON;
-    outHit.distance = t;
-    outHit.location = ray.origin + ray.direction * t;
+        hit.normal = vec3(triangles[triID].normalX, triangles[triID].normalY, triangles[triID].normalZ);
 
-    vec3 normal = vec3(triangles[triID].normalX, triangles[triID].normalY, triangles[triID].normalZ);
-    //outHit.normal = normal * sign(dot(normal, (-1) * ray.direction));
-    outHit.normal = normal;
+        return true;
+    }
 
-    return outHit;
+    return false;
 
 }
 
@@ -473,15 +464,15 @@ bool RayCheckBVHNode(vec3 origin, vec3 invDirection, int bvhNodeID)
 }
 
 // Traverses the bvh tree and checks for collisions
-Hit RayCheckBVH(Ray ray, int bvhStart, int trianglesStart)
+bool RayCheckBVH(out Hit outHit, Ray ray, int bvhStart, int trianglesStart)
 {
-    // Precomputing inverted ray direction (to speed up RayCheckBVHNode calls)
+    // Precomputing
     vec3 invDirection = 1 / ray.direction;
 
     Hit hit;
-    hit.didHit = false;
 
     hit.distance = 1e20;
+    bool didHit = false;
 
     const int MAX_STACK_SIZE = 32;
     int stack[MAX_STACK_SIZE];
@@ -503,13 +494,14 @@ Hit RayCheckBVH(Ray ray, int bvhStart, int trianglesStart)
             // Leaf node — check triangles
             for (int i = 0; i < (-1 * bvhTree[nodeIndex].rIndex); i++) 
             {
-                Hit tempHit = RayCheckTriangle(triangleStartIndex + i, ray);
+                Hit tempHit;
                 
-                if (tempHit.didHit) 
+                if (RayCheckTriangle(tempHit, triangleStartIndex + i, ray)) 
                 {
                     if (tempHit.distance < hit.distance) 
                     {
                         hit = tempHit;
+                        didHit = true;
                     }
                 }
             }
@@ -520,26 +512,15 @@ Hit RayCheckBVH(Ray ray, int bvhStart, int trianglesStart)
             if (stackPtr + 2 >= MAX_STACK_SIZE) { break; }
 
             // Push children to the stack
-            stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].lIndex;
-            stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].rIndex;
             
-            // vec3 lPosition = (bvhTree[bvhTree[nodeIndex].lIndex].minExtent + bvhTree[bvhTree[nodeIndex].lIndex].maxExtent) / 2;
-            // vec3 rPosition = (bvhTree[bvhTree[nodeIndex].rIndex].minExtent + bvhTree[bvhTree[nodeIndex].rIndex].maxExtent) / 2;
-            // if (dot(lPosition - ray.origin, lPosition - ray.origin) < dot(rPosition - ray.origin, rPosition - ray.origin))
-            // {
-            //     stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].lIndex;
-            //     stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].rIndex;
-            // }
-
-            // else
-            // {
-            //     stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].rIndex;
-            //     stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].lIndex;
-            // }
+            stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].rIndex;
+            stack[stackPtr++] = bvhStart + bvhTree[nodeIndex].lIndex;
+            
         }
     }
 
-    return hit;
+    outHit = hit;
+    return didHit;
 }
 
 
@@ -548,16 +529,13 @@ Hit RayCheckBVH(Ray ray, int bvhStart, int trianglesStart)
 // -----------
 
 // Casts a ray and returns true, if the ray hit something, puts hit result data into outHit
-Hit CastRay(Ray ray)
+bool CastRay(out Hit outHit, Ray ray)
 {
 
     //Looping over all of the primitives and getting the closest hit
     Hit closestHit;
-
-    Hit localHit;
     closestHit.distance = ray.distance;
 
-    // Checking object intersections
     for (int i = 0; i < objectCount; i++)
     {
         // for (int j = objects[i].trianglesStart; j < objects[i].trianglesStart + objects[i].bvhStart; j++)
@@ -571,40 +549,19 @@ Hit CastRay(Ray ray)
         //     }
         // }
 
-        localHit = RayCheckBVH(ray, objects[i].bvhStart, objects[i].trianglesStart);
+        Hit localHit;
         localHit.materialID = objects[i].materialID;
 
-        if (localHit.didHit)
+        if (RayCheckBVH(localHit, ray, objects[i].bvhStart, objects[i].trianglesStart))
         {
+            localHit.materialID = objects[i].materialID;
             closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
         }
     }
 
-    // Checking primitive intersections
-    //#ifdef TRACE_PRIMITIVES
+    outHit = closestHit;
 
-    for (int i = 0; i < primitiveCount; i++)
-    {
-        // Type 0 - sphere
-        if (primitives[i].type == 0)
-        {
-            localHit = RayCheckSphere(i, ray);
-            if (localHit.didHit)
-            {
-                closestHit = (localHit.distance < closestHit.distance) ? localHit : closestHit;
-            }
-        }
-
-        // Type 1 - axis alligned cube
-        // ...
-    }
-
-    //#endif
-
-    closestHit;
-    closestHit.didHit = closestHit.distance < ray.distance;
-
-    return closestHit;
+    return closestHit.distance < ray.distance;
 }
 
 
@@ -619,45 +576,12 @@ vec4 SampleSurfaceColor(out float emission, Hit hit)
     return vec4(materials[hit.materialID].color, 1);
 }
 
-float CloudSampleFunction(vec3 position)
-{
-    return (sin(position.x * 1) * sin(position.z * 0.4) + 1) * 0.5;
-}
-
-float SampleClouds(vec3 direction, vec3 origin)
-{
-    float stepLen = 1;
-
-    float sampleMask = clamp(dot(direction, vec3(0, 1, 0)), 0, 1);
-
-    if (sampleMask > 0.1)
-    {
-        float sampledValue = 0;
-
-        float stepCountValue = 10 / (sampleMask);
-
-        vec3 currentPosition = vec3(0);
-
-        for (int i = 0; i < stepCountValue; i++)
-        {
-            sampledValue += CloudSampleFunction(currentPosition) / stepCountValue;
-
-            currentPosition += direction * stepLen;
-        }
-
-        return sampledValue * pow(sampleMask - 0.1, 0.5);
-    }
-
-    return 0;
-}
-
 // Returns the color of the sky from a given direction
 // @out emission - how much ambient light comes from this direction
-vec4 SampleBackgroundColor(out float emission, vec3 direction, vec3 origin)
+vec4 SampleBackgroundColor(out float emission, vec3 direction)
 {
     float verticalFactor = clamp(dot(direction, vec3(0, 1, 0)), 0, 1);
     vec4 skyColor = mix(mix( vec4(0.4, 0.4, 1, 1), vec4(0.1, 0.1, 1, 1), verticalFactor), vec4(1), 0.25);
-    vec4 cloudColor = vec4(1);
 
     vec4 totalSunColor = vec4(0);
     totalSunColor.a = 1;
@@ -667,7 +591,8 @@ vec4 SampleBackgroundColor(out float emission, vec3 direction, vec3 origin)
     // Looping over all of the lights to find directional lights
     for (int i = 0; i < lightCount; i++)
     {
-        float sunMask = pow(clamp(dot(lights[i].direction, direction), 0.0, 1.0), 1000);
+        float sunMask = pow(clamp(dot(lights[i].direction, direction), 0.0, 1.0), 5000);
+        sunMask = pow(sunMask, 0.2);
 
         totalBrightness += sunMask * lights[i].intensity;
 
@@ -682,10 +607,21 @@ vec4 SampleBackgroundColor(out float emission, vec3 direction, vec3 origin)
     //emission = 0;
     //return vec4(0);
 
-    float cloudMask = SampleClouds(direction, origin);
+    emission = totalBrightness;
+    return skyColor + totalSunColor;
+}
 
-    emission = totalBrightness / (1 + cloudMask * 0.2);
-    return mix(skyColor, cloudColor, cloudMask) + totalSunColor;
+// Simply combines SampleSurfaceColor and SampleBackgroundColor into one convenient function
+vec4 SampleColor(out float emission, bool didHit, Hit hit, vec3 direction)
+{
+    float surfaceEmission;
+    vec4 surfaceColor = SampleSurfaceColor(surfaceEmission, hit);
+
+    float backgroundEmission;
+    vec4 backgroundColor = SampleBackgroundColor(backgroundEmission, direction);
+
+    emission = mix(backgroundEmission, surfaceEmission, float(didHit));
+    return mix(backgroundColor, surfaceColor, float(didHit));
 }
 
 
@@ -696,8 +632,6 @@ vec4 SampleBackgroundColor(out float emission, vec3 direction, vec3 origin)
 // Does all of the ray tracing logic to render a single pixel of the image
 vec4 RayTrace(vec3 origin, vec3 direction, inout uint randomSeed)
 {
-    const float EPSILON = 1e-5;
-
     vec4 incomingLight = vec4(0);
     vec4 rayColor = vec4(1);
 
@@ -709,65 +643,31 @@ vec4 RayTrace(vec3 origin, vec3 direction, inout uint randomSeed)
 
     for (int i = 0; i < maxBounces; i++)
     {
-        Hit hit = CastRay(ray);
+        Hit hit;
+        bool didHit = CastRay(hit, ray);
 
-        if (hit.didHit)
+        if (didHit)
         {
             float sampledEmission = 0;
-            vec4 sampledColor = mix(SampleSurfaceColor(sampledEmission, hit), vec4(1), materials[hit.materialID].transparency);
+            vec4 sampledColor = SampleSurfaceColor(sampledEmission, hit);
 
-            incomingLight += sampledColor * sampledEmission * rayColor;
-            rayColor *= mix(vec4(1), sampledColor, materials[hit.materialID].roughness);
+            incomingLight += sampledColor * sampledEmission;
+            rayColor *= sampledColor;
 
-            // Refraction
-            if (materials[hit.materialID].transparency > 0)
-            {
-                vec3 normal = hit.normal;
-                float ior = materials[hit.materialID].refractionIndex;
-
-                float cosTheta = dot((-1) * ray.direction, normal);
-                bool entering = cosTheta > 0.0;
-
-                // Adjust normal and IOR ratio depending on whether we're entering or exiting
-                float eta = entering ? (1.0 / ior) : (ior / 1.0);
-
-                // flip normal if exiting
-                if (!entering) normal = -normal; 
-
-                // Compute Fresnel reflectance (Schlick's approximation)
-                // float r0 = pow((1.0 - ior) / (1.0 + ior), 2.0);
-                // float fresnel = r0 + (1.0 - r0) * pow(1.0 - abs(cosTheta), 5.0);          
-
-                // Mix in transparency-based reflect/refract
-                // float reflectChance = mix(clamp(fresnel, 0.0, 1 - materials[hit.materialID].transparency), 1.0, 1.0 - materials[hit.materialID].transparency);
-
-                float reflectChance = mix(0.0, 1.0, 1.0 - materials[hit.materialID].transparency);
-
-                vec3 refraction = refract(normalize(ray.direction), normalize(normal), eta);
-                if (randomValue(randomSeed) > reflectChance && length(refraction) > EPSILON)
-                {
-                    ray.origin = hit.location + (-1) * normal * EPSILON;
-                    ray.direction = refraction;
-
-                    continue;
-                }
-            }
-
-            // Reflection
-            //vec3 cameraFacingNormal = hit.normal * sign(dot(hit.normal, (-1) * ray.direction));
-            vec3 cameraFacingNormal = hit.normal;
-            ray.origin = hit.location + cameraFacingNormal * EPSILON;
-            ray.direction = mix(reflect(ray.direction, normalize(cameraFacingNormal)), randomHemisphere(cameraFacingNormal, randomSeed), materials[hit.materialID].roughness);
+            ray.origin = hit.location + hit.normal * 0.001;
+            ray.direction = mix(reflect(ray.direction, hit.normal), normalize(hit.normal + randomDirection(randomSeed)), materials[hit.materialID].roughness);
         }
 
         else
         {
             float sampledEmission = 0;
-            vec4 sampledColor = SampleBackgroundColor(sampledEmission, ray.direction, ray.origin);
+            vec4 sampledColor = SampleBackgroundColor(sampledEmission, ray.direction);
             incomingLight += sampledEmission * sampledColor * rayColor;
 
             break;
         }
+
+        
     }
     
     return incomingLight;

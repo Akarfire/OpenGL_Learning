@@ -1,33 +1,26 @@
 ﻿using OpenGL_Learning.Engine.Rendering;
 using OpenGL_Learning.Engine.Rendering.RenderEngines;
-using OpenTK.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace OpenGL_Learning.Engine.Objects
+namespace OpenGL_Learning.Engine.Objects.GeneralPrimitives
 {
-    public class RayTracingMeshObject: MeshObject
+    public abstract class PrimitiveObject: GameWorldObject
     {
         public int materialID { get; protected set; } = 0;
 
-        public RayTracingMeshObject(Engine inEngine, string meshDataName) : base(inEngine, meshDataName)
-        {
 
+        public PrimitiveObject(Engine inEngine) : base(inEngine) {}
+
+
+        // Returns general primitive data structure, that is to be sent to GPU's SSBO
+        public virtual GeneralPrimitive GetPrimitiveData()
+        {
+            GeneralPrimitive primitiveData = new GeneralPrimitive();
+
+            primitiveData.materialID = materialID;
+
+            return primitiveData;
         }
 
-        // Called by the RayTracingRenderingEngine, this data will be sent to the GPU
-        // BVH data is filled automatically in the Rendering Engine
-        public ObjectData GetRayTracingObjectData()
-        {
-            ObjectData objectData = new ObjectData();
-
-            objectData.materialID = materialID;
-
-            return objectData;
-        }
 
         // Sets a new material for the object's geometry
         public void SetMaterial(string materialName)

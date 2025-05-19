@@ -53,8 +53,8 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
     public class MeshData
     {
         // Mesh data lists
-        protected List<Vertex> vertices = new List<Vertex>();
-        protected List<Triangle> triangles = new List<Triangle>();
+        public List<Vertex> vertices { get; protected set; } = new List<Vertex>();
+        public List<Triangle> triangles { get; protected set; } = new List<Triangle>();
 
         protected NormalCalculationParams normalCalculationParams;
 

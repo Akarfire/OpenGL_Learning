@@ -21,6 +21,8 @@ namespace OpenGL_Learning.Engine.Rendering.DefaultMeshData
                 new Triangle(2, 3, 0)
             };
 
+            normalCalculationParams.enableTriangleNormals = true;
+
             InitMeshData();
         }
     }

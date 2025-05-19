@@ -96,6 +96,10 @@ namespace OpenGL_Learning.Engine.Rendering
         public Vector3 v1; public float normalX;
         public Vector3 v2; public float normalY;
         public Vector3 v3; public float normalZ;
+
+        //public int v1Index;
+        //public int v2Index;
+        //public int v3Index;
     };
 
 
@@ -131,22 +135,29 @@ namespace OpenGL_Learning.Engine.Rendering
         public Vector3 maxExtent; public int rIndex;
     }
 
-    //// Constains data about a single BVH node
-    //[StructLayout(LayoutKind.Sequential)]
-    //public struct BVHNode
-    //{
-    //    /*
-    //    minExtent and maxExtent are used for collision testing the boudning box
-    //    */
 
-    //    public Vector3 minExtent; public int lChildIndex;
-    //    public Vector3 maxExtent; public int rChildIndex;
+    /* A strucuture containing data about a generalized primitive
+     * Based on the type, the primitive can be interpreted to be:
+     *          0 - sphere;
+     *          1 - axis alligned cube;
+     *
+     * P.S. Can be expanded to support more primitive types
+     */
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GeneralPrimitive
+    {
+        public Vector3 vecOne;
+        public float scalar;
 
-    //    public int nextNode;
-    //    public int triangleStart;
-    //    public int triangleCount;
-    //    public int isLeaf;
-    //};
+        public Vector3 vecTwo;
 
+        // ID of the primitive's material
+        public int materialID;
+
+        public Vector3 vecThree;
+
+        // Type of the primitive: 0 - sphere, 1 - axis alligned cube
+        public int type;
+    };
 
 }

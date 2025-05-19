@@ -97,8 +97,6 @@ namespace OpenGL_Learning.Engine
                 if (cursorGrabbed) ShowCursor();
                 else GrabCursor();
 
-                cursorGrabbed = !cursorGrabbed;
-
                 if (currentWorld != null) { currentWorld.worldCamera.SetMouseInputEnabled(cursorGrabbed); }
             }
         }
@@ -113,8 +111,8 @@ namespace OpenGL_Learning.Engine
             // GPU DEBUGGING
             // ----
 
-            //var error = GL.GetError();
-            //Console.WriteLine(error);
+            var error = GL.GetError();
+            Console.WriteLine(error);
 
             // ----
         }
