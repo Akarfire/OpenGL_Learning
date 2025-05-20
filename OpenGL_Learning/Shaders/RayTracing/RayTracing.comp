@@ -640,7 +640,7 @@ float SampleClouds(vec3 direction, vec3 origin)
 
         for (int i = 0; i < stepCountValue; i++)
         {
-            sampledValue += CloudSampleFunction(currentPosition) / stepCountValue;
+            sampledValue += (CloudSampleFunction(currentPosition) / stepCountValue) * clamp(stepCountValue - i, 0, 1);
 
             currentPosition += direction * stepLen;
         }
@@ -740,8 +740,8 @@ vec4 RayTrace(vec3 origin, vec3 direction, inout uint randomSeed)
 
                 // Mix in transparency-based reflect/refract
                 // float reflectChance = mix(clamp(fresnel, 0.0, 1 - materials[hit.materialID].transparency), 1.0, 1.0 - materials[hit.materialID].transparency);
-
-                float reflectChance = mix(0.0, 1.0, 1.0 - materials[hit.materialID].transparency);
+                float fresnel = pow(1 - clamp(dot(-ray.direction, normal), 0, 1), 5);
+                float reflectChance = mix(fresnel, 1.0, 1.0 - materials[hit.materialID].transparency);
 
                 vec3 refraction = refract(normalize(ray.direction), normalize(normal), eta);
                 if (randomValue(randomSeed) > reflectChance && length(refraction) > EPSILON)
@@ -799,7 +799,7 @@ void main()
     int sampleCount = rayCount;
     vec4 currentFrameColor = vec4(0);
 
-    uint randomState = invocationID.y * 641 + invocationID.x + frame * 719393;
+    uint randomState = invocationID.y * 641 + invocationID.x + frame * 719393423;
 
     for (int i = 0; i < sampleCount; i++)
     { 

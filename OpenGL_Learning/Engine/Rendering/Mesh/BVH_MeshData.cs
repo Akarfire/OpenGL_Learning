@@ -193,6 +193,10 @@ namespace OpenGL_Learning.Engine.Rendering.Mesh
                     tri.v2 = triangle.v2;
                     tri.v3 = triangle.v3;
 
+                    tri.normalX = triangle.normalX;
+                    tri.normalY = triangle.normalY;
+                    tri.normalZ = triangle.normalZ;
+
                     //tri.v1Index = outVertexList.Count;
                     //tri.v2Index = outVertexList.Count + 1;
                     //tri.v3Index = outVertexList.Count + 2;

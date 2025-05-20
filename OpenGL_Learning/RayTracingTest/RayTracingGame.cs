@@ -91,7 +91,7 @@ namespace RayTracingTest
             mat_glass.roughness = 0.1f;
             mat_glass.emissionStrength = 0;
             mat_glass.transparency = 0.8f;
-            mat_glass.refractionIndex = 1.05f;
+            mat_glass.refractionIndex = 1.1f;
             mat_glass.emissionStrength = 0.1f;
 
             renderEngine.AddMaterial("mat_glass", mat_glass);
@@ -259,7 +259,7 @@ namespace RayTracingTest
 
 
 
-            engine.currentWorld.worldCamera.AddLocation(Vector3.UnitY * 20);
+            engine.currentWorld.worldCamera.AddLocation(Vector3.UnitY * 20 + Vector3.UnitX * -5);
 
             engine.StartEngine();
         }
